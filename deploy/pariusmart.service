@@ -1,0 +1,35 @@
+[Unit]
+Description=PariuSmart AI Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pariusmart
+Group=pariusmart
+WorkingDirectory=/opt/pariusmart-bot
+Environment="PYTHONUNBUFFERED=1"
+Environment="PYTHONPATH=/opt/pariusmart-bot"
+ExecStart=/opt/pariusmart-bot/.venv/bin/python -m bot.bot
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/pariusmart-bot/data /opt/pariusmart-bot/model
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+# Resource limits
+LimitNOFILE=1024
+MemoryMax=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target
