@@ -1,105 +1,362 @@
-# FREE Soccer Picks Telegram Bot (MVP)
+# PariuSmart AI - Advanced Sports Betting Bot
 
-MVP **gratuit** care folosește:
-- **Football-Data.org** (fixtures, echipe, meciuri de azi, formă din meciurile anterioare) — planul **Free** e pe veci (cu rate limit).  
-- **The Odds API** (cote *H2H* pre-meci) — plan **Free** cu ~500 calls/lună, suficient pentru MVP.  
-- (opțional) **GDELT DOC 2.0** pentru un scor simplu de *news/sentiment* pe ultimele 24–72h (poți porni mai târziu).
+🤖⚽️✨ **Agent inteligent pentru pariuri sportiv## 📱 Comenzi Bot
 
-> ⚠️ Pariurile implică risc ridicat. Nu promitem profit. Respectă legislația și include mesaje de joc responsabil (+18).
+### Comenzi Principale
+- `/start` → Mesaj de bun venit cu interfață modernă și animație
+- `/today` → **TOP 2 picks 1X2** personalizate cu EV calculation  
+- `/markets` → **Piețe O/U 2.5 & BTTS** cu procente mari
+- `/all` → **🌟 PREDICȚII COMPLETE** pentru toate piețele (nou!)
+- `/express [min] [max] [legs]` → **Expresuri rapide** optimizate AI
+- `/health` → **Status toate API-urile** (OK/MISSING, fără a afișa chei)
+- `/lang` → **Comută limba** cu steaguri (🇷🇴🇬🇧🇷🇺)
 
-## Rapid Start
+### 🚀 NEW: Advanced Features (Surprise!) - NOW WITH ANIMATIONS! 🎬
+- `/stats` → **📊 Personal Analytics** cu grafice vizuale, ROI, streaks + **animații live**
+- `/track` → **📋 Track Pariuri** pentru statistici personale cu **efecte vizuale** 
+- `/bankroll` → **💰 Kelly Criterion** management cu protecții risc + **animații money**
+- `/live` → **⚡ Live Center** cu alertă goluri și schimbări cote + **live animations**
+- `/strategies` → **🎯 Advanced Tools** (arbitrage, value scanner, accumulator) + **prediction effects**
+- `/social` → **🏆 Challenges & Achievements** cu leaderboards și gamification + **success animations**
+- `/ai` → **🤖 Personal AI** cu recomandări bazate pe pattern-urile tale + **neural animations**
+- `/leaderboard` → **🥇 Top Performeri** cu ROI și win rates
 
-1. **Chei API** (exportă în env):
-   ```bash
-   export FOOTBALL_DATA_TOKEN="fd_xxx"      # https://www.football-data.org/  (Free forever)
-   export ODDS_API_KEY="odds_xxx"           # https://the-odds-api.com/ (Free ~500 calls/lună)
-   # opțional (nu e necesar pentru MVP):
-   export GDELT_ENABLED="0"
+#### 🎬 **ANIMAȚII & EFECTE VIZUALE** (NEW!)
+- **🎯 Animated Stickers** similare cu https://t.me/addstickers/NewsEmoji pentru fiecare acțiune
+- **⚡ Loading Animations** pentru predicții, live center, stats cu progres bars
+- **🔥 Visual Confidence** sistem cu emoji-uri dinamice bazate pe probabilități
+- **💎 Success Celebrations** animații pentru picks de succes și achievements
+- **🎊 Welcome Animation** sequence la `/start` cu efecte spektaculoase
+- **🎯 Target Indicators** pentru cele mai bune picks în fiecare piață
+
+### Meniu Interactiv Modern
+- 🔥 **Picks Azi** → Cele mai bune 2 selecții 1X2 cu probabilități
+- 📊 **Piețe (O/U & BTTS)** → 3-4 picks mixte cu EV pozitiv  
+- 🎯 **Predicții Complete** → Match cards cu toate piețele (nou!)
+- 🎯 **Expres** → Wizard configurabil cu setări vizuale
+
+#### 🚀 Advanced Menu (Surpriză Maximă!) - **CU ANIMAȚII LIVE! 🎬**
+- 📈 **Stats & Analytics** → Dashboard personal cu grafice și metrici + **🎯 prediction animations**
+- 💰 **Bankroll** → Management inteligent cu Kelly Criterion și protecții + **💎 money effects**  
+- ⚡ **Live Center** → Matches live, alertă instant, odds monitoring + **⚡ live streaming effects**
+- 🎯 **Strategies** → Arbitrage scanner, value bets, accumulator builder + **🔥 strategy animations**
+- 🏆 **Social & Challenges** → Achievements, streaks, competiții, leaderboards + **🎊 success celebrations**
+- 🤖 **Personal AI** → Analiza pattern-urilor + recomandări personalizate + **🧬 neural animations**
+
+### 🎬 **ANIMAȚII ȘI EFECTE VIZUALE PREMIUM**
+- **Telegram-style Animated Stickers** pentru fiecare funcție
+- **Live Loading Effects** cu progress bars și visual feedback
+- **Dynamic Confidence Indicators**: 🔥🔥🔥 (High), 🔥🔥 (Medium), 🔥 (Standard) 
+- **Target Highlighting**: 🎯 pentru best picks în fiecare piață
+- **Celebration Animations**: 🎊💎🔥 pentru successe și achievements
+- **Welcome Animation Sequence** la startup cu efecte progressive
+- **Navigation Animations** pentru toate butoanele și meniuri
+
+- 🌐 **Limba** → Română/English/Русский cu steaguri 
+- ℹ️ **Ajutor** → Ghid complet comenzi cu explicații AImulti-sursă și predicții avansate.
+
+## ✨ Funcționalități Principale
+
+### 🎯 **Piețe Multiple**
+- **1X2** (Home/Draw/Away) - piața clasică  
+- **Over/Under 2.5** - totalul golurilor
+- **Both Teams To Score (BTTS)** - ambele echipe marchează
+- Calculare automată **Expected Value (EV)** pentru fiecare pick
+
+### 🧠 **Analiza AI Avansată**
+- **Probabilități implicite** din cote (normalizare fără marjă, consens multi-bookmaker)
+- **Formă echipe** din ultimele 5 meciuri (puncte 3/1/0)
+- **Statistici echipe** (goluri medii, cartonașe, formația de acasă/deplasare)
+- **Condiții meteo** pentru meciuri (temperatură, vânt, probabilitate ploaie)
+- **Analiza sentimentului** din Reddit și știri internaționale (GDELT)
+- **Sistem de blend** cu modele ML locale (învățare continuă)
+
+### 🎯 **Expresuri Inteligente**
+- **Diversificare per utilizator** (fiecare user primește picks diferite)
+- **Optimizare automată** pentru probabilitate combinată și EV
+- **Configurare flexibilă** (număr selecții, interval cote)
+- **Metrici detaliate** per selecție și total parlay
+
+### 🌐 **Interfață Modernă**
+- **Multilingv**: Română 🇷🇴, English 🇬🇧, Русский 🇷🇺
+- **Meniu intuitiv** cu butoane și emoji
+- **Comutare limbă** fără restart
+- **Welcome experience** cu animație (opțional)
+- **Match insights** cu 🧠 emoji și informații contextualizate
+
+### 📈 **Învățare Locală**
+- **Logging CSV** pentru toate predicțiile
+- **Etichetare automată** a rezultatelor zilnic
+- **Training modele ML** din date istorice
+- **Blend inteligent** cote + formă + ML (80% + 20% implicit)
+
+### 🏥 **Monitorizare & Resilience**
+- **Health check** pentru toate API-urile (status OK/MISSING)
+- **Caching TTL** (60-120s) pentru performanță
+- **Graceful degradation** dacă API-urile nu răspund
+- **Rate limiting awareness** pentru planurile gratuite
+
+## 🚀 Configurare Rapidă
+
+### 1. **Chei API** (completează în `.env`):
+```env
+# === CORE APIS (Obligatorii) ===
+TELEGRAM_BOT_TOKEN=your_telegram_token
+FOOTBALL_DATA_TOKEN=your_fd_token          # Free forever - football-data.org
+ODDS_API_KEY=your_odds_api_key             # Free 500 calls/lună - the-odds-api.com
+
+# === STATISTICI ÎMBUNĂTĂȚITE ===
+API_FOOTBALL_KEY=your_api_sports_key       # Preferat - api-sports.io
+APIFOOTBALL_KEY=your_apifootball_key       # Fallback - apifootball.com
+
+# === DATE CONTEXTUALE ===
+OPENWEATHER_KEY=your_openweather_key       # Condiții meteo
+VIDEO_API_TOKEN=your_video_token           # Highlights (placeholder)
+
+# === SENTIMENT ANALYSIS ===
+REDDIT_CLIENT_ID=your_reddit_client
+REDDIT_CLIENT_SECRET=your_reddit_secret
+REDDIT_USER_AGENT=PariuSmart-Bot/1.0
+
+# === OPȚIONAL ===
+GDELT_ENABLED=1                            # Analiza știrilor internaționale
+```
+
+### 2. **Instalare**:
+```bash
+# Clonează și setup mediu virtual
+git clone <repo-url>
+cd free-soccer-telegram-bot
+python -m venv .venv
+
+# Activare (Linux/Mac)
+source .venv/bin/activate
+# SAU Windows
+.venv\Scripts\activate
+
+# Instalare dependențe
+pip install -r requirements.txt
+```
+
+### 3. **Rulare**:
+```bash
+# Dezvoltare locală
+python -m bot.bot
+
+# SAU folosind modulul
+python bot/bot.py
+```
+
+## 📱 Comenzi Bot
+
+### Comenzi Principale
+- `/start` → Mesaj de bun venit cu interfață modernă și animație
+- `/today` → **TOP 2 picks 1X2** personalizate cu EV calculation  
+- `/markets` → **Piețe O/U 2.5 & BTTS** cu procente mari
+- `/all` → **🌟 PREDICȚII COMPLETE** pentru toate piețele (nou!)
+- `/express [min] [max] [legs]` → **Expresuri rapide** optimizate AI
+- `/health` → **Status toate API-urile** (OK/MISSING, fără a afișa chei)
+- `/lang` → **Comută limba** cu steaguri (🇷🇴🇬🇧🇷🇺)
+
+### Meniu Interactiv Modern
+- � **Picks Azi** → Cele mai bune 2 selecții 1X2 cu probabilități
+- 📊 **Piețe (O/U & BTTS)** → 3-4 picks mixte cu EV pozitiv  
+- � **Predicții Complete** → Match cards cu toate piețele (nou!)
+- �🎯 **Expres** → Wizard configurabil cu setări vizuale
+- 🌐 **Limba** → Română/English/Русский cu steaguri 
+- ℹ️ **Ajutor** → Ghid complet comenzi cu explicații AI
+
+### 🌟 Noutăți Interface Modernă
+- **Match Cards** → Afișaj frumos cu toate probabilitățile
+- **Butoane interactive** cu emoji și indicatori vizuali
+- **Predicții pentru toate piețele** → 1X2, O/U 2.5, BTTS în același loc
+- **EV calculation** vizibil pentru fiecare selecție
+- **Best pick recommendation** → AI îți spune cea mai bună opțiune
+- **Visual indicators** → 🔥 pentru EV mare, ⭐ pentru EV mediu, 💫 pentru EV mic
+
+## 🏗️ Arhitectura Tehnică
+
+### **Fetchers (Colectare Date)**
+- `football_data.py` → Meciuri și rezultate (caching 5 min)
+- `odds_api.py` → Cote H2H/O/U/BTTS (caching 90s)
+- `api_football.py` → Statistici echipe (caching 10 min)
+- `weather.py` → Condiții meteo (caching 2h)
+- `reddit.py` + `gdelt.py` → Sentiment analysis (caching 1h)
+
+### **Analytics (Procesare)**
+- `probability.py` → Blend probabilități cote + formă
+- `markets.py` → Normalizare picks O/U și BTTS
+- `insights.py` → Generare match insights contextuale
+- `express.py` → Optimizare expresuri high-prob
+
+### **AI & ML**
+- `predictions_logger.py` → CSV logging toate predicțiile
+- `label_results.py` → Etichetare automată rezultate
+- `model_blend.py` → Integrare modele ML locale
+
+### **Utils**
+- `config.py` → Configurare centralizată + health check
+- `cache.py` → TTL caching thread-safe  
+- `i18n.py` → Traduceri RO/EN/RU complete
+
+## 🚀 Deployment Producție
+
+### **Windows - Rulare Permanentă (Task Scheduler)**
+
+Pentru a rula botul permanent pe Windows cu repornire automată:
+
+#### **Pași de Instalare:**
+
+1. **Deschide PowerShell ca Administrator**
+   ```powershell
+   # Click dreapta pe Start → "Windows PowerShell (Administrator)"
    ```
 
-2. **Instalare**:
-   ```bash
-   python -m venv .venv && source .venv/bin/activate
-   pip install -r requirements.txt
+2. **Setează Execution Policy (pe sesiune)**
+   ```powershell
+   Set-ExecutionPolicy Bypass -Scope Process -Force
    ```
 
-3. **Rulează botul Telegram**:
-   ```bash
-   export TELEGRAM_BOT_TOKEN="123456:ABC..."
-   python bot/bot.py
+3. **Navighează la directorul botului și instalează taskul**
+   ```powershell
+   cd "C:\Users\Bogdan\Downloads\free-soccer-telegram-bot"
+   .\deploy\install_task_windows.ps1 -RepoPath "C:\Users\Bogdan\Downloads\free-soccer-telegram-bot"
    ```
 
-## Comenzi Bot
-- `/today` → cele mai bune **picks** pentru **azi** (top 10 ligi + cupe populare configurate).
-- `/express [min_odds] [max_odds] [legs]` → compune un **expres high-prob** în intervalul de cote dorit (ex. `/express 2 4 3`).  
-- `/health` → status API & rate limits.
+4. **Pornește taskul**
+   ```powershell
+   Start-ScheduledTask -TaskName "PariuSmartAIBot"
+   ```
 
-## Cum estimează probabilități
-1) **Din cote** (The Odds API) → probabilități implicite (scoaterea marjei, consens pe mai mulți bookmakeri).  
-2) Dacă lipsesc cote pentru un meci: **formă echipe** din ultimele 5 jocuri (puncte 3/1/0) → mapping logistic simplu.  
-3) Îmbinare: dacă avem și cote, și formă, facem un **blend**: `p = 0.8*p_from_odds + 0.2*p_from_form`.
+#### **Verificare și Monitorizare:**
 
-## Ligi/competiții incluse (config implicit)
-- **PL (Anglia), PD (La Liga), SA (Serie A), BL1 (Bundesliga), FL1 (Ligue 1), DED (Eredivisie), PPL (Primeira Liga)**,  
-- **CL (UCL), EL (UEL), UCL (UEFA Conference League)** — coduri conform Football-Data. Le poți ajusta în `src/utils/leagues.py`.
+```powershell
+# Verifică statusul taskului
+Get-ScheduledTaskInfo -TaskName "PariuSmartAIBot"
 
-## Limitări & Note
-- Football-Data Free: ~10 req/min (înregistrat) + acoperire clar listată; vezi pagina Coverage.  
-- The Odds API Free: cote limitate; când quota se termină, botul trece pe formă-only.
-- GDELT: gratuit; îl poți porni ulterior pentru scor de „buzz”.
+# Monitorizează logurile live
+Get-Content .\logs\bot.log -Tail 100 -Wait
 
-Succes! 🚀
+# Verifică ultimele 50 linii din log
+Get-Content .\logs\bot.log -Tail 50
+```
+
+#### **Test Manual:**
+
+```powershell
+# Test rulare script (pentru debugging)
+.\deploy\run_windows.ps1
+```
+
+#### **Dezinstalare (Opțional):**
+
+```powershell
+.\deploy\uninstall_task_windows.ps1
+```
+
+#### **Caracteristici Avansate:**
+- ✅ **Auto-restart** la crash (până la 10 încercări/minut)
+- ✅ **Start la boot** și la logon
+- ✅ **Logging complet** în `logs\bot.log`
+- ✅ **Virtual environment** auto-creat și activat
+- ✅ **Dependencies** auto-instalate
+- ✅ **Rulare în buclă** cu restart în caz de eroare
+
+### **Linux (Systemd)**
+```bash
+# Rulează script automat
+chmod +x deploy/deploy_linux.sh
+./deploy/deploy_linux.sh
+
+# SAU manual:
+sudo cp deploy/pariusmart.service /etc/systemd/system/
+sudo systemctl enable --now pariusmart
+```
+
+### **Windows (Task Scheduler/NSSM)**
+```powershell
+# Instalează NSSM (Non-Sucking Service Manager)
+# Download de la: https://nssm.cc/download
+
+# Instalare serviciu
+nssm install PariuSmartBot "C:\path\to\.venv\Scripts\python.exe"
+nssm set PariuSmartBot Arguments "-m bot.bot"
+nssm set PariuSmartBot AppDirectory "C:\path\to\bot"
+nssm set PariuSmartBot DisplayName "PariuSmart AI Bot"
+nssm set PariuSmartBot Description "Advanced sports betting AI agent"
+
+# Start serviciu
+nssm start PariuSmartBot
+```
+
+### **Monitorizare**
+```bash
+# Status serviciu
+sudo systemctl status pariusmart
+
+# Loguri live
+sudo journalctl -u pariusmart -f
+
+# Etichetare rezultate zilnică (cron)
+0 2 * * * cd /opt/pariusmart-bot && ./.venv/bin/python tools/label_results.py
+```
+
+## 📊 Exemple Utilitate
+
+### **Match Insights Avansate**
+```
+🧠 ⚽ High-scoring teams (3.2 avg goals) • ⭐ Key players: Haaland, Salah • 
+🌤️ 18°C, 3m/s wind • 🟢 Positive buzz (12 sources)
+```
+
+### **Markets Display**
+```
+📊 2024-09-25 — O/U 2.5 & BTTS
+
+• Arsenal vs Chelsea — O/U 2.5: Over 2.5 | p≈62.4% | cote 1.75 | EV +0.092
+• Liverpool vs City — BTTS: Yes | p≈71.2% | cote 1.65 | EV +0.175  
+• Madrid vs Barcelona — O/U 2.5: Over 2.5 | p≈58.1% | cote 1.80 | EV +0.046
+```
+
+### **Express Optimizat**
+```
+🎯 2024-09-25 — Expres (3 selecții)
+
+• Arsenal vs Chelsea — 1X2: Arsenal | p≈0.524 | cote 1.85
+• Bayern vs Dortmund — 1X2: Bayern | p≈0.612 | cote 1.72  
+• PSG vs Lyon — 1X2: PSG | p≈0.681 | cote 1.51
+
+Prob combinată≈0.218 | Cote totale 4.81 | EV +0.049
+```
+
+## 🔐 Securitate & Compliance
+
+- **Niciodată nu afișează chei API** în logs sau mesaje
+- **Rate limiting** automat pentru toate API-urile
+- **Validare input** pentru comenzi utilizator
+- **Disclaimer 18+** în toate mesajele relevante
+- **Graceful failure** când API-urile nu sunt disponibile
+
+## 📈 Scalare Viitoare
+
+- [ ] **Dashboard web** (FastAPI + React) pentru analiză avansată
+- [ ] **Sistem abonamente** (Stripe) pentru features premium  
+- [ ] **Modele ML** mai complexe (XGBoost, ensemble)
+- [ ] **Piețe suplimentare** (corners, cartonașe, handicap)
+- [ ] **Live betting** cu updates timp real
+- [ ] **Portfolio management** cu bankroll tracking
+
+## ⚠️ Disclaimer Legal
+
+**Pariurile implică riscuri financiare semnificative. Vârsta minimă: 18 ani.**
+
+- Nu garantăm profituri sau acuratețea predicțiilor
+- Utilizează doar bani pe care îți permiți să-i pierzi  
+- Respectă legislația locală privind pariurile online
+- Joacă responsabil și cere ajutor dacă dezvolți dependență
+
+Bot-ul este destinat **exclusiv scopurilor educaționale și de divertisment**.
 
 ---
 
-## Proiect A→Z (plan pentru varianta gratuită → scalare)
-
-### 1) **Ingestion (gratuit)**
-- Football-Data.org (fixtures de azi, istorice scurte pentru formă).
-- The Odds API (cote H2H; la epuizare quota → fallback formă).
-- (opțional) GDELT pentru scor de știri/sentiment.
-
-### 2) **Feature Engineering**
-- Probabilități implicite din cote (scoatere marjă, consens multi-book).
-- Formă: puncte din ultimele 5 meciuri, golaveraj recent (extensibil).
-- (ulterior) absențe/lineups, xG, news/sentiment.
-
-### 3) **Modelul AI (agent)**
-- Inițial: blend {cote 80% + formă 20%}.
-- Training offline lunar/săptămânal pe CSV istoric → LogisticRegression calibrat (isotonic).
-- Export model `.joblib`, servit în `ForecastAgent` (vezi `src/ai/agent.py`).
-
-### 4) **Generare Picks & Expres**
-- Selectezi per meci outcome cu `p` maxim (Home/Draw/Away).
-- Expres high-prob: greedy până la cote totale target (2–4) și `legs` 2–4; optimizezi probabilitatea combinată.
-
-### 5) **UI/UX Telegram (multilingv)**
-- Meniu principal cu **butoane**: Picks azi / Expres / Limba / Help.
-- Wizard pentru Expres: alege `legs`, `min_odds`, `max_odds` din butoane → “Construiește”.
-- Suport limbi: **Română, English, Русский** (comutare din UI).
-
-### 6) **Deploy & Observabilitate**
-- Rulezi ca serviciu (pm2/systemd) + `.env` pentru chei.
-- Logging simplu (stdout → file) + rate-limit handling pentru API-uri.
-- Caching local 1–5 minute pentru a reduce call-urile.
-
-### 7) **Scalare (ulterior)**
-- DB (Postgres) + joburi periodice (cron) pentru dataset istoric.
-- Dashboard (FastAPI) cu picks/expres + abonamente (Stripe).
-- Adaugi surse bogate (lineups/injuries, Betfair, xG) și un pipeline de ML stabil.
-
-**Disclaimer**: produsul nu garantează profit. Respectă legislația și bunele practici de joc responsabil.
-
-## Configurare prin `.env`
-1) Copiază `.env.example` în `.env` și completează cheile:
-   ```bash
-   cp .env.example .env
-   # editează valorile:
-   # TELEGRAM_BOT_TOKEN=...
-   # FOOTBALL_DATA_TOKEN=...
-   # ODDS_API_KEY=...
-   ```
-2) Botul încarcă `.env` automat (python-dotenv). Poți rula direct:
-   ```bash
-   python bot/bot.py
-   ```
+**Dezvoltat cu ❤️ pentru comunitatea de betting inteligent**
