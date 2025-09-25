@@ -3,13 +3,14 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-import os, asyncio, datetime as dt, requests
+import os, asyncio, datetime as dt, requests, random
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, CallbackQueryHandler
 from src.utils.config import settings
-from src.utils.leagues import TOP_COMP_CODES, ODDS_SPORT_KEYS
+from src.utils.leagues import TOP_COMP_CODES, ODDS_SPORT_KEYS, TOP_N_FOR_UI
 from src.fetchers.football_data import get_matches_for_date, get_team_recent_results
 from src.fetchers.odds_api import get_odds_for_sport, implied_probs_from_bookmakers
+from src.analytics.markets import top_market_picks_for_date, seeded_shuffle_picks, compute_parlay_metrics
 from src.utils.matching import teams_match
 from src.analytics.probability import probs_from_form, blend_probs, ev_from_probs_odds
 from src.analytics.express import greedy_highprob
@@ -29,12 +30,6 @@ def _reply(update, text, reply_markup=None):
                 return update.get_bot().send_message(chat_id=chat_id, text=text, reply_markup=reply_markup)
     return None
 
-
-DISCLAIMER = {
-    "RO": "⚠️ Pariurile implică risc. +18. Nu există garanții. Joacă responsabil.",
-    "EN": "⚠️ Betting involves risk. 18+. No guarantees. Play responsibly.",
-    "RU": "⚠️ Азартные игры несут риск. 18+. Гарантий нет. Играйте ответственно."
-}
 
 def today_iso():
     return dt.datetime.now(dt.timezone.utc).date().isoformat()
@@ -68,9 +63,10 @@ def compute_form_points(matches: list, team_side: str) -> float:
 def _kb_main(lang):
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(tr(lang,"menu_picks"), callback_data="MENU_TODAY")],
+        [InlineKeyboardButton(tr(lang,"menu_markets"), callback_data="MENU_MARKETS")],
         [InlineKeyboardButton(tr(lang,"menu_express"), callback_data="MENU_EXPRESS")],
-        [InlineKeyboardButton(tr(lang,"menu_lang"), callback_data="MENU_LANG")],
-        [InlineKeyboardButton(tr(lang,"menu_help"), callback_data="MENU_HELP")]
+        [InlineKeyboardButton(tr(lang,"menu_lang"), callback_data="MENU_LANG"),
+         InlineKeyboardButton(tr(lang,"menu_help"), callback_data="MENU_HELP")]
     ])
 
 def _kb_lang():
@@ -91,9 +87,45 @@ def _kb_express(lang, legs=None, min_odds=None, max_odds=None):
     row4 = [InlineKeyboardButton(tr(lang,"build"), callback_data="EXP_BUILD")]
     return InlineKeyboardMarkup([row1,row2,row3,row4])
 
+def seeded_rng_for_user(user_id: int, date_str: str) -> random.Random:
+    """Create deterministic RNG for user-specific diversification"""
+    return random.Random(f"{user_id}:{date_str}")
+
+
+async def send_welcome_animation(update, lang):
+    """Try to send welcome animation if assets/welcome.gif exists"""
+    try:
+        with open("assets/welcome.gif", "rb") as gif_file:
+            await update.message.reply_animation(gif_file)
+    except FileNotFoundError:
+        # Skip animation if file doesn't exist
+        pass
+    except Exception as e:
+        print(f"Error sending welcome animation: {e}")
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = get_lang(update.effective_user.id)
-    await update.message.reply_text(tr(lang,"start"), reply_markup=_kb_main(lang))
+    
+    # Try to send welcome animation first
+    await send_welcome_animation(update, lang)
+    
+    # Send rich welcome message
+    emoji = tr(lang, "app_name_emoji")
+    welcome_msg = [
+        tr(lang, "welcome_title", emoji=emoji),
+        "",
+        tr(lang, "welcome_features"),
+        "",
+        tr(lang, "welcome_commands"),
+        "",
+        tr(lang, "welcome_disclaimer")
+    ]
+    
+    await update.message.reply_text(
+        "\n".join(welcome_msg), 
+        reply_markup=_kb_main(lang)
+    )
 
 async def health(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = get_lang(update.effective_user.id)
@@ -115,17 +147,28 @@ async def picks_for_date(update: Update, context: ContextTypes.DEFAULT_TYPE, dat
         await _reply(update, tr(lang, "no_matches"))
         return
 
-    # prefetch odds
+    # prefetch odds for all markets (h2h, totals, both_teams_to_score)
     odds_all = {}
+    odds_unavailable_global = False
     if settings.odds_api_key:
         for code in set([m["competition"] for m in matches]):
             sport_key = ODDS_SPORT_KEYS.get(code)
             if not sport_key: continue
-            data = get_odds_for_sport(settings.odds_api_key, sport_key, regions=settings.odds_regions, markets=settings.odds_markets)
-            if not data: continue
-            odds_all[code] = data[0]
+            try:
+                data = get_odds_for_sport(
+                    settings.odds_api_key, 
+                    sport_key, 
+                    regions=settings.odds_regions or "uk,eu", 
+                    markets="h2h,totals,both_teams_to_score"
+                )
+                if data and data[0]:
+                    odds_all[code] = data[0]
+            except:
+                continue
+    else:
+        odds_unavailable_global = True
 
-    picks=[]
+    picks = []
     for m in matches:
         home_form = compute_form_points(get_team_recent_results(token, m["home_id"], date_iso), "HOME")
         away_form = compute_form_points(get_team_recent_results(token, m["away_id"], date_iso), "AWAY")
@@ -154,14 +197,112 @@ async def picks_for_date(update: Update, context: ContextTypes.DEFAULT_TYPE, dat
             "ev": round(float(evs[idx]),3)
         })
 
-    picks = sorted(picks, key=lambda x: (x["p_est"], x["ev"]), reverse=True)[:20]
-    lines = [tr(lang,"today_header", date=date_iso, n=len(picks))]
-    for p in picks[:10]:
-        lines.append(f'• {p["match"]} ({p["competition"]}) — {p["selection"]} | p≈{p["p_est"]} | cote {p["odds"]} | EV {p["ev"]}')
-    lines.append("\n"+DISCLAIMER.get(lang, DISCLAIMER["EN"]))
+    # Sort all picks by quality, then apply user-specific diversification
+    picks = sorted(picks, key=lambda x: (x["p_est"], x["ev"]), reverse=True)
+    
+    # Take top TOP_N_FOR_UI candidates and shuffle deterministically per user
+    user_id = update.effective_user.id
+    top_picks = seeded_shuffle_picks(picks[:TOP_N_FOR_UI], user_id, date_iso, 2)
+
+    lines = [tr(lang, "today_header", date=date_iso)]
+    for p in top_picks:
+        lines.append(f'• {p["match"]} — {p["selection"]} | p≈{p["p_est"]} | cote {p["odds"]} | EV {p["ev"]}')
+    
+    # Add odds unavailability message if needed
+    if odds_unavailable_global:
+        lines.append("")
+        lines.append(tr(lang, "odds_unavailable"))
+    
+    lines.append("")
+    lines.append(tr(lang, "disclaimer"))
     await _reply(update, "\n".join(lines), reply_markup=_kb_main(lang))
 
-async def cmd_express(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def cmd_markets(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show Over/Under 2.5 and BTTS markets"""
+    lang = get_lang(update.effective_user.id)
+    await update.message.reply_text(tr(lang,"processing"))
+    
+    # Parse optional date argument or default to today
+    args = context.args
+    if args and len(args) > 0:
+        date_str = args[0]
+        if date_str == "today":
+            date_str = today_iso()
+        # Validate YYYY-MM-DD format
+        try:
+            dt.datetime.fromisoformat(date_str)
+        except ValueError:
+            date_str = today_iso()
+    else:
+        date_str = today_iso()
+    
+    await markets_for_date(update, context, date_str, lang)
+
+
+async def markets_for_date(update: Update, context: ContextTypes.DEFAULT_TYPE, date_iso: str, lang: str):
+    """Generate Over/Under and BTTS market picks for a specific date"""
+    token = settings.football_data_token
+    matches = get_matches_for_date(token, TOP_COMP_CODES, date_iso)
+    if not matches:
+        await _reply(update, tr(lang, "no_matches"))
+        return
+
+    # Fetch odds with extended markets  
+    odds_events_by_comp = {}
+    odds_unavailable = False
+    
+    if settings.odds_api_key:
+        for code in set([m["competition"] for m in matches]):
+            sport_key = ODDS_SPORT_KEYS.get(code)
+            if not sport_key:
+                continue
+            try:
+                data = get_odds_for_sport(
+                    settings.odds_api_key, 
+                    sport_key,
+                    regions=settings.odds_regions or "uk,eu",
+                    markets="h2h,totals,both_teams_to_score"
+                )
+                if data and data[0]:
+                    odds_events_by_comp[code] = data[0]
+            except Exception as e:
+                print(f"Error fetching odds for {code}: {e}")
+                continue
+    else:
+        odds_unavailable = True
+
+    if not odds_events_by_comp:
+        # No odds available, inform user
+        lines = [tr(lang, "markets_header", date=date_iso)]
+        lines.append("")
+        if odds_unavailable:
+            lines.append(tr(lang, "odds_unavailable"))
+        else:
+            lines.append("ℹ️ Nu sunt disponibile cote pentru piețele O/U și BTTS.")
+        lines.append("")
+        lines.append(tr(lang, "disclaimer"))
+        await _reply(update, "\n".join(lines), reply_markup=_kb_main(lang))
+        return
+
+    # Get top market picks
+    market_picks = top_market_picks_for_date(matches, odds_events_by_comp, target_line=2.5, top_n=4)
+    
+    if not market_picks:
+        lines = [tr(lang, "markets_header", date=date_iso)]
+        lines.append("• Nu s-au găsit picks valide pentru piețele O/U & BTTS")
+        lines.append("")
+        lines.append(tr(lang, "disclaimer"))
+        await _reply(update, "\n".join(lines), reply_markup=_kb_main(lang))
+        return
+
+    # Format response
+    lines = [tr(lang, "markets_header", date=date_iso)]
+    for pick in market_picks:
+        lines.append(f'• {pick["match"]} — {pick["market"]}: {pick["selection"]} | p≈{pick["p_est"]} | cote {pick["odds"]} | EV {pick["ev"]}')
+    
+    lines.append("")
+    lines.append(tr(lang, "disclaimer"))
+    await _reply(update, "\n".join(lines), reply_markup=_kb_main(lang))
     lang = get_lang(update.effective_user.id)
     context.user_data["exp_cfg"] = {"legs":3, "min":2.0, "max":4.0}
     await update.message.reply_text(tr(lang,"wizard_title"), reply_markup=_kb_express(lang))
@@ -211,6 +352,10 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.edit_message_text(tr(lang,"processing"))
         await picks_for_date(update, context, today_iso(), lang)
         return
+    if data == "MENU_MARKETS":
+        await q.edit_message_text(tr(lang,"processing"))
+        await markets_for_date(update, context, today_iso(), lang)
+        return
     if data == "MENU_EXPRESS":
         context.user_data["exp_cfg"] = {"legs":3, "min":2.0, "max":4.0}
         await q.edit_message_text(tr(lang,"wizard_title"), reply_markup=_kb_express(lang))
@@ -249,50 +394,7 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     if data == "EXP_BUILD":
         await q.edit_message_text(tr(lang,"processing"))
-        # build & display
-        date_iso = today_iso()
-        token = settings.football_data_token
-        matches = get_matches_for_date(token, TOP_COMP_CODES, date_iso)
-        if not matches:
-            await q.edit_message_text(tr(lang,"no_matches"), reply_markup=_kb_main(lang))
-            return
-        odds_all={}
-        if settings.odds_api_key:
-            for code in set([m["competition"] for m in matches]):
-                sport_key = ODDS_SPORT_KEYS.get(code)
-                if not sport_key: continue
-                datao = get_odds_for_sport(settings.odds_api_key, sport_key, regions=settings.odds_regions, markets=settings.odds_markets)
-                if not datao: continue
-                odds_all[code] = datao[0]
-
-        picks=[]
-        for m in matches:
-            home_form = compute_form_points(get_team_recent_results(token, m["home_id"], date_iso), "HOME")
-            away_form = compute_form_points(get_team_recent_results(token, m["away_id"], date_iso), "AWAY")
-            p_form = probs_from_form(home_form-away_form)
-
-            odds_events = odds_all.get(m["competition"], [])
-            odds_probs, odds_tuple = (None, None)
-            if odds_events:
-                odds_probs, odds_tuple = match_odds_for_fixture(odds_events, m["home_name"], m["away_name"])
-
-            p_comb = blend_probs(odds_probs, p_form, m["home_name"], m["away_name"], w_odds=0.8 if odds_probs else 0.0)
-            if not odds_tuple:
-                odds_tuple = (max(1.01,1.0/max(1e-6,p_comb[0])),
-                              max(1.01,1.0/max(1e-6,p_comb[1])),
-                              max(1.01,1.0/max(1e-6,p_comb[2])))
-            idx = int(max(range(3), key=lambda i: p_comb[i]))
-            selection = ["Home","Draw","Away"][idx]
-            o_sel = odds_tuple[idx]
-            picks.append({"match": f'{m["home_name"]} vs {m["away_name"]}', "selection": selection, "p_est": float(max(p_comb)), "odds": float(o_sel)})
-
-        parlay = greedy_highprob(picks, cfg["min"], cfg["max"], max_legs=cfg["legs"])
-        if not parlay:
-            await q.edit_message_text(tr(lang,"express_fail"), reply_markup=_kb_main(lang))
-            return
-        legs_txt = " + ".join([f'{l["match"]} ({l["selection"]})' for l in parlay["legs_detail"]])
-        msg = f'{tr(lang,"express_header", date=date_iso)}\n{legs_txt}\nProb≈{parlay["prob"]:.3f} | Cote totale {parlay["odds"]:.2f} | EV {parlay["ev"]:.3f}\n\n{DISCLAIMER.get(lang, DISCLAIMER["EN"])}'
-        await q.edit_message_text(msg, reply_markup=_kb_main(lang))
+        await build_express(update, context, lang)
         return
 
 async def cmd_lang(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -303,6 +405,129 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = get_lang(update.effective_user.id)
     await update.message.reply_text(tr(lang,"help"), reply_markup=_kb_main(lang))
 
+
+async def cmd_express(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Enhanced express/parlay command with improved detail display"""
+    lang = get_lang(update.effective_user.id)
+    
+    # Check for command arguments
+    args = context.args
+    if len(args) >= 3:
+        try:
+            min_odds = float(args[0])
+            max_odds = float(args[1])
+            legs = int(args[2])
+            context.user_data["exp_cfg"] = {"legs": legs, "min": min_odds, "max": max_odds}
+            await update.message.reply_text(tr(lang,"processing"))
+            await build_express(update, context, lang)
+            return
+        except (ValueError, IndexError):
+            pass
+    
+    # Show wizard
+    context.user_data["exp_cfg"] = {"legs":3, "min":2.0, "max":4.0}
+    await update.message.reply_text(tr(lang,"wizard_title"), reply_markup=_kb_express(lang))
+
+
+async def build_express(update: Update, context: ContextTypes.DEFAULT_TYPE, lang: str):
+    """Build enhanced express with detailed leg information and combined metrics"""
+    cfg = context.user_data.get("exp_cfg", {"legs":3, "min":2.0, "max":4.0})
+    
+    date_iso = today_iso()
+    token = settings.football_data_token
+    matches = get_matches_for_date(token, TOP_COMP_CODES, date_iso)
+    
+    if not matches:
+        await _reply(update, tr(lang,"no_matches"), reply_markup=_kb_main(lang))
+        return
+    
+    # Fetch odds
+    odds_all = {}
+    odds_unavailable = False
+    if settings.odds_api_key:
+        for code in set([m["competition"] for m in matches]):
+            sport_key = ODDS_SPORT_KEYS.get(code)
+            if not sport_key: continue
+            try:
+                data = get_odds_for_sport(
+                    settings.odds_api_key, 
+                    sport_key, 
+                    regions=settings.odds_regions or "uk,eu", 
+                    markets="h2h,totals,both_teams_to_score"
+                )
+                if data and data[0]:
+                    odds_all[code] = data[0]
+            except:
+                continue
+    else:
+        odds_unavailable = True
+
+    # Build candidate picks
+    picks = []
+    for m in matches:
+        home_form = compute_form_points(get_team_recent_results(token, m["home_id"], date_iso), "HOME")
+        away_form = compute_form_points(get_team_recent_results(token, m["away_id"], date_iso), "AWAY")
+        p_form = probs_from_form(home_form-away_form)
+
+        odds_events = odds_all.get(m["competition"], [])
+        odds_probs, odds_tuple = (None, None)
+        if odds_events:
+            odds_probs, odds_tuple = match_odds_for_fixture(odds_events, m["home_name"], m["away_name"])
+
+        p_comb = blend_probs(odds_probs, p_form, m["home_name"], m["away_name"], w_odds=0.8 if odds_probs else 0.0)
+        if not odds_tuple:
+            odds_tuple = (max(1.01,1.0/max(1e-6,p_comb[0])),
+                          max(1.01,1.0/max(1e-6,p_comb[1])),
+                          max(1.01,1.0/max(1e-6,p_comb[2])))
+        idx = int(max(range(3), key=lambda i: p_comb[i]))
+        selection = ["Home","Draw","Away"][idx]
+        o_sel = odds_tuple[idx]
+        picks.append({
+            "match": f'{m["home_name"]} vs {m["away_name"]}', 
+            "selection": selection, 
+            "p_est": float(max(p_comb)), 
+            "odds": float(o_sel)
+        })
+
+    # Apply user-specific diversification to candidate pool before greedy selection  
+    user_id = update.effective_user.id
+    diversified_picks = seeded_shuffle_picks(picks, user_id, date_iso, min(len(picks), TOP_N_FOR_UI * 2))
+    
+    # Run greedy algorithm on diversified pool
+    parlay = greedy_highprob(diversified_picks, cfg["min"], cfg["max"], max_legs=cfg["legs"])
+    
+    if not parlay:
+        await _reply(update, tr(lang,"express_fail"), reply_markup=_kb_main(lang))
+        return
+
+    # Enhanced display with per-leg details and combined metrics
+    lines = [tr(lang,"express_header", date=date_iso, legs=len(parlay["legs_detail"]))]
+    lines.append("")
+    
+    # Show each leg with detailed info
+    for i, leg in enumerate(parlay["legs_detail"], 1):
+        market_label = "1X2"  # Currently only H2H, can extend later
+        lines.append(f'• {leg["match"]} — {market_label}: {leg["selection"]} | p≈{leg["p_est"]:.3f} | cote {leg["odds"]:.2f}')
+    
+    # Calculate and display combined metrics using new function
+    combined = compute_parlay_metrics(parlay["legs_detail"])
+    lines.append("")
+    lines.append(tr(lang, "express_combined", 
+                   prob=combined["combined_prob"], 
+                   odds=combined["combined_odds"], 
+                   ev=combined["ev"]))
+    
+    # Add odds unavailability notice if needed
+    if odds_unavailable:
+        lines.append("")
+        lines.append(tr(lang, "odds_unavailable"))
+    
+    lines.append("")
+    lines.append(tr(lang, "disclaimer"))
+    
+    await _reply(update, "\n".join(lines), reply_markup=_kb_main(lang))
+
+
 def main():
     token = settings.telegram_token or os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
@@ -310,6 +535,7 @@ def main():
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("today", cmd_today))
+    app.add_handler(CommandHandler("markets", cmd_markets))
     app.add_handler(CommandHandler("express", cmd_express))
     app.add_handler(CommandHandler("lang", cmd_lang))
     app.add_handler(CommandHandler("help", cmd_help))

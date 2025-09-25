@@ -1,10 +1,16 @@
 
+# How many candidates we build before per-user selection for diversification
+TOP_N_FOR_UI = 6
+
 # Football-Data.org competition codes (see docs: CL=Champions Lg, EL=Europa Lg, UCL=UEFA Conference Lg)
 # Coverage/codes: https://docs.football-data.org/general/v4/lookup_tables.html
 TOP_COMP_CODES = [
     "PL","PD","SA","BL1","FL1","DED","PPL",
     "CL","EL","UCL"
 ]
+
+# Number of top candidates to build before per-user selection for UI diversification
+TOP_N_FOR_UI = 6
 
 # The Odds API sport keys mapping (adjust if needed; use /v4/sports to verify exact keys)
 # Docs: https://the-odds-api.com/liveapi/guides/v4/
