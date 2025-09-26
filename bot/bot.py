@@ -18,6 +18,7 @@ from src.analytics.stats import (
     get_stats_summary, add_bet_record, update_bet_result, 
     get_monthly_chart, get_leaderboard, load_user_stats, save_user_stats
 )
+from src.utils.subs import plan_gate, get_user_stats
 from src.analytics.strategies import (
     find_value_bets, detect_arbitrage_opportunities, build_accumulator,
     kelly_criterion_stake, martingale_protection_check
@@ -499,30 +500,37 @@ def get_comprehensive_match_predictions(match, odds_events, token, date_iso):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    lang = get_lang(update.effective_user.id)
+    uid = update.effective_user.id
+    lang = get_lang(uid)
     user_name = update.effective_user.first_name or "Prietene"
+    
+    # Get user subscription info
+    stats = get_user_stats(uid)
     
     # Try to send welcome animation first
     await send_welcome_animation(update, lang)
     
-    # Enhanced welcome message
+    # Enhanced welcome message with subscription info
     welcome_msg = [
         f"🤖⚽✨ **Bun venit în PariuSmart AI, {user_name}!**",
         "",
-        "🎯 **Ce pot face pentru tine:**",
-        "├ 🔥 **Picks zilnice** - Top selecții AI cu probabilități mari",
-        "├ 📊 **Piețe multiple** - O/U 2.5, BTTS cu analiza avansată", 
-        "├ 🌟 **Predicții complete** - Toate piețele pentru meciuri",
-        "└ 🎯 **Expresuri inteligente** - Optimizate automat pentru profit",
+        f"🔒 **Plan Curent:** {stats['plan'].title()} {f'({stats['days_left']} zile)' if stats['expires'] else ''}",
         "",
-        "🧠 **Powered by:**",
+        "🎯 **Ce pot face pentru tine:**",
+        "├ 🔥 **Picks zilnice** - Top selecții AI (GRATUIT)",
+        "├ 📊 **Piețe multiple** - O/U 2.5, BTTS" + (" ✅" if stats['plan'] != 'free' else " 🔒"),
+        "├ 🌟 **Predicții complete** - Toate piețele" + (" ✅" if stats['plan'] != 'free' else " 🔒"),
+        "├ 🎯 **Expresuri inteligente** - Optimizate AI" + (" ✅" if stats['plan'] != 'free' else " 🔒"),
+        "└ 📈 **Analytics avansate** - Stats personale" + (" ✅" if stats['plan'] == 'pro' else " 🔒"),
+        "",
+        "🧠 **Powered by AI:**",
         "• Machine Learning cu învățare continuă",
-        "• Analiza weather, sentiment și statistici live",
+        "• Analiza weather, sentiment și statistici live", 
         "• Expected Value (EV) calculation pentru fiecare pick",
         "",
-        "⚠️ **Important:** Joacă responsabil! +18 ani, respectă legislația locală",
+        f"{'🚀 Upgrade la Starter/Pro pentru acces complet!' if stats['plan'] == 'free' else '✅ Ai acces la funcții premium!'}",
         "",
-        "🚀 **Alege o opțiune din meniul de mai jos:**"
+        "⚠️ **Important:** Joacă responsabil! +18, respectă legislația locală"
     ]
     
     await update.message.reply_text(
@@ -549,6 +557,7 @@ async def health(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"{tr(lang, 'health_title')}\n\n{health_text}")
 
 async def cmd_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # No plan restriction for /today - available for all users
     lang = get_lang(update.effective_user.id)
     await update.message.reply_text(tr(lang,"processing"))
     date = today_iso()
@@ -666,7 +675,13 @@ async def picks_for_date(update: Update, context: ContextTypes.DEFAULT_TYPE, dat
 
 async def cmd_markets(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show Over/Under 2.5 and BTTS markets"""
-    lang = get_lang(update.effective_user.id)
+    uid = update.effective_user.id
+    can_access, msg = plan_gate(uid, 'markets')
+    if not can_access:
+        await update.message.reply_text(f"{msg}\n\nFolosește /subscribe pentru upgrade!")
+        return
+        
+    lang = get_lang(uid)
     await update.message.reply_text(tr(lang,"processing"))
     
     # Parse optional date argument or default to today
@@ -1936,7 +1951,7 @@ def main():
     app.add_handler(CommandHandler("leaderboard", lambda u,c: _reply(u, get_leaderboard())))
 
     # --- SUBSCRIPTIONS MVP ---
-    from src.utils.subs import is_admin, get_plan, grant_days, redeem, plan_gate
+    from src.utils.subs import is_admin, get_plan, grant_days, redeem, plan_gate, get_user_stats, list_active_codes, add_promo_code
     async def subscribe_cmd(update, context):
         text = (
             "🔒 <b>Abonamente PariuSmart AI</b>\n\n"
@@ -1961,9 +1976,22 @@ def main():
 
     async def status_cmd(update, context):
         uid = update.effective_user.id
-        plan, expires = get_plan(uid)
-        exp = expires if expires else "-"
-        await update.message.reply_text(f"Plan: {plan} | Expiră: {exp}")
+        stats = get_user_stats(uid)
+        
+        status_text = f"""
+🔒 **Status Abonament**
+
+📊 **Plan Curent:** {stats['plan'].title()}
+📅 **Expiră:** {stats['expires'] if stats['expires'] else 'Niciodată'}
+⏰ **Zile Rămase:** {stats['days_left']}
+✅ **Status:** {'Activ' if stats['is_active'] else 'Inactiv'}
+
+🚀 **Funcții Disponibile:**
+{'✅ Toate funcțiile' if stats['plan'] == 'pro' else '✅ Funcții de bază' if stats['plan'] == 'starter' else '⚠️ Doar /today'}
+
+💡 **Tip:** Folosește /subscribe pentru upgrade!
+        """
+        await update.message.reply_text(status_text, parse_mode='Markdown')
 
     async def grant_cmd(update, context):
         uid = update.effective_user.id
@@ -1986,10 +2014,37 @@ def main():
         exp = grant_days(id_user, plan, zile)
         await update.message.reply_text(f"✅ Grant {zile} zile ({plan}) → {id_user}. Expiră: {exp}")
 
+    async def admin_cmd(update, context):
+        uid = update.effective_user.id
+        if not is_admin(uid):
+            await update.message.reply_text("⛔ Doar admin.")
+            return
+        
+        codes = list_active_codes()
+        codes_text = "\n".join([f"• `{code}`" for code in codes]) if codes else "Niciun cod activ"
+        
+        admin_text = f"""
+🔑 **Panel Admin**
+
+**Coduri Promo Active:**
+{codes_text}
+
+**Comenzi Admin:**
+• `/grant <zile> <plan> <user_id>` - Acordă abonament
+• `/admin` - Acest panel
+
+**Exemplu cod nou în JSON:**
+```json
+{{"NEWCODE": {{"plan": "starter", "days": 30}}}}
+```
+        """
+        await update.message.reply_text(admin_text, parse_mode='Markdown')
+
     app.add_handler(CommandHandler("subscribe", subscribe_cmd))
     app.add_handler(CommandHandler("redeem", redeem_cmd))
     app.add_handler(CommandHandler("status", status_cmd))
     app.add_handler(CommandHandler("grant", grant_cmd))
+    app.add_handler(CommandHandler("admin", admin_cmd))
     # --- END SUBSCRIPTIONS MVP ---
 
     app.add_handler(CallbackQueryHandler(on_callback))

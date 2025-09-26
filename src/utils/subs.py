@@ -58,15 +58,63 @@ def redeem(code: str, uid: int) -> tuple[bool, str]:
     return True, expires
 
 def plan_gate(uid: int, feature: str) -> tuple[bool, str]:
-    plan, _ = get_plan(uid)
+    plan, expires = get_plan(uid)
+    
+    # Check if subscription expired
+    if expires:
+        exp_date = datetime.strptime(expires, '%Y-%m-%d')
+        if datetime.now().date() > exp_date.date():
+            # Downgrade to free if expired
+            data = _load()
+            if str(uid) in data['users']:
+                del data['users'][str(uid)]
+                _save(data)
+            plan = 'free'
+    
     if plan == 'free':
-        if feature == 'today':
+        if feature in ['today', 'help', 'start', 'lang']:
             return True, ''
-        return False, '⛔ Doar pentru abonați.'
+        return False, '⛔ Upgrade la Starter/Pro pentru acces complet!'
+    
     if plan == 'starter':
-        if feature == 'markets':
-            return True, 'max 3 legs'
+        if feature in ['today', 'markets', 'stats', 'bankroll']:
+            return True, ''
+        if feature == 'express':
+            return True, 'max 3 selecții'
+        return False, '⛔ Upgrade la Pro pentru funcții avansate!'
+    
     if plan == 'pro':
-        if feature == 'markets':
-            return True, 'max 4 legs'
+        if feature == 'express':
+            return True, 'max 4 selecții'
+        return True, ''  # Pro has access to everything
+    
     return False, '⛔ Funcție indisponibilă.'
+
+def get_user_stats(uid: int) -> dict:
+    """Get user subscription stats"""
+    plan, expires = get_plan(uid)
+    days_left = 0
+    if expires:
+        exp_date = datetime.strptime(expires, '%Y-%m-%d')
+        days_left = max(0, (exp_date.date() - datetime.now().date()).days)
+    
+    return {
+        'plan': plan,
+        'expires': expires,
+        'days_left': days_left,
+        'is_active': plan != 'free' and days_left > 0
+    }
+
+def list_active_codes() -> list:
+    """List all available promo codes (admin only)"""
+    data = _load()
+    return list(data.get('codes', {}).keys())
+
+def add_promo_code(code: str, plan: str, days: int) -> bool:
+    """Add new promo code (admin only)"""
+    data = _load()
+    if code in data['codes']:
+        return False  # Code already exists
+    data['codes'][code] = {'plan': plan, 'days': days}
+    _save(data)
+    return True
