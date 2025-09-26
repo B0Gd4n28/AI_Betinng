@@ -1,22 +1,62 @@
 
 from __future__ import annotations
-import requests, time
-from typing import Dict, Any, List
+import requests, time, logging
+from typing import Dict, Any, List, Tuple, Optional
+import sys
+import os
+
+# Add src to path for imports
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from utils.cache import cache
+
+logger = logging.getLogger(__name__)
 
 BASE = "https://api.the-odds-api.com/v4"
 
-def get_odds_for_sport(api_key:str, sport_key:str, regions:str="uk,eu", markets:str="h2h")->list[dict]:
+def get_odds_for_sport(api_key: str, sport_key: str, regions: str = "uk,eu", markets: str = "h2h") -> Tuple[list[dict], dict]:
     """
     Returnează lista de evenimente cu cote pentru un sport key (ex: soccer_epl).
     markets poate fi "h2h", "totals", "both_teams_to_score" sau combinații separate prin virgulă.
+    
+    Returns:
+        Tuple[list[dict], dict]: (events_list, headers) unde headers conține remaining-requests info
     """
+    cache_key = f"odds_{sport_key}_{regions}_{markets}"
+    
+    # Check cache first
+    cached_result = cache.get(cache_key)
+    if cached_result is not None:
+        logger.debug(f"Using cached odds for {sport_key}")
+        return cached_result
+    
     url = f"{BASE}/sports/{sport_key}/odds"
-    params = {"apiKey": api_key, "regions": regions, "markets": markets, "oddsFormat":"decimal", "dateFormat":"iso"}
-    r = requests.get(url, params=params, timeout=30)
-    if r.status_code!=200:
-        return []
-    # headers include remaining-requests, used-requests this month
-    return r.json(), r.headers
+    params = {
+        "apiKey": api_key, 
+        "regions": regions, 
+        "markets": markets, 
+        "oddsFormat": "decimal", 
+        "dateFormat": "iso"
+    }
+    
+    try:
+        r = requests.get(url, params=params, timeout=30)
+        if r.status_code != 200:
+            logger.error(f"Odds API error {r.status_code} for {sport_key}: {r.text[:200]}")
+            return [], {}
+            
+        result = (r.json(), dict(r.headers))
+        
+        # Cache for 90 seconds (odds change frequently)
+        cache.set(cache_key, result, ttl=90)
+        
+        return result
+        
+    except requests.RequestException as e:
+        logger.error(f"Request failed for odds {sport_key}: {str(e)}")
+        return [], {}
+    except Exception as e:
+        logger.error(f"Unexpected error getting odds for {sport_key}: {str(e)}")
+        return [], {}
 
 def implied_probs_from_bookmakers(event:dict) -> dict|None:
     """

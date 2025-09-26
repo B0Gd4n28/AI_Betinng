@@ -2,8 +2,11 @@ param([string]$RepoPath = "C:\Users\Bogdan\Downloads\free-soccer-telegram-bot")
 $ErrorActionPreference = "Stop"
 Set-Location $RepoPath
 
-# alege 'py' sau 'python'
-$python = (Get-Command py -ErrorAction SilentlyContinue) ? "py" : "python"
+# alege 'py' sau 'python' - compatibil cu PowerShell 5.1
+$python = "python"
+if (Get-Command py -ErrorAction SilentlyContinue) { 
+    $python = "py" 
+}
 
 if (-not (Test-Path ".venv")) { & $python -m venv .venv }
 & .\.venv\Scripts\Activate.ps1
