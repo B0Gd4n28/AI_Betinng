@@ -286,45 +286,95 @@ def get_user_account_info(uid: int) -> dict:
     }
 
 def get_pricing_catalog() -> dict:
-    """Get pricing catalog for subscription plans"""
+    """Get pricing catalog for subscription plans with attractive USD pricing"""
     return {
         'BASIC': {
-            'price_monthly': '29 RON/lună',
-            'price_yearly': '299 RON/an (2 luni GRATUIT)',
+            'price_monthly': '$7.99/month',
+            'price_yearly': '$79.99/year (SAVE 17%)',
+            'price_original': '$95.88',
             'features': [
-                '✅ 50 predicții/zi',
-                '✅ Analiza meciurilor LIVE',
-                '✅ Statistici detaliate',
-                '✅ Suport 24/7'
+                '✅ 50 AI predictions daily',
+                '✅ LIVE match analysis',
+                '✅ Detailed statistics & insights',
+                '✅ 24/7 premium support',
+                '✅ Mobile app access',
+                '✅ Win rate tracking'
             ],
-            'savings': 'Economisești 49 RON/an'
+            'savings': 'SAVE $15.89/year',
+            'discount': '17% OFF'
         },
         'PRO': {
-            'price_monthly': '49 RON/lună', 
-            'price_yearly': '499 RON/an (2 luni GRATUIT)',
+            'price_monthly': '$12.99/month', 
+            'price_yearly': '$119.99/year (SAVE 23%)',
+            'price_original': '$155.88',
             'features': [
-                '✅ PREDICȚII NELIMITATE',
-                '✅ Analiza AI avansată',
-                '✅ Express builder automat',
-                '✅ Strategii personalizate',
-                '✅ Alerte PUSH instant',
-                '✅ Suport prioritar VIP'
+                '🔥 UNLIMITED AI PREDICTIONS',
+                '🔥 Advanced ML algorithms',
+                '🔥 Auto express builder',
+                '🔥 Personal betting strategies',
+                '🔥 Instant PUSH alerts',
+                '🔥 VIP priority support',
+                '🔥 Exclusive Telegram channel',
+                '🔥 Weekly expert insights'
             ],
-            'savings': 'Economisești 89 RON/an',
-            'popular': True
+            'savings': 'SAVE $35.89/year',
+            'popular': True,
+            'discount': '23% OFF'
         },
         'PREMIUM': {
-            'price_monthly': '99 RON/lună',
-            'price_yearly': '999 RON/an (3 luni GRATUIT)', 
+            'price_monthly': '$19.99/month',
+            'price_yearly': '$179.99/year (SAVE 25%)', 
+            'price_original': '$239.88',
             'features': [
-                '🔥 TOATE funcțiile PRO',
-                '🔥 Analiza psihologică echipe',
-                '🔥 Predicții pe baza vremii',
-                '🔥 Tracking portofoliu avansat',
-                '🔥 Sesiuni 1-on-1 cu experți',
-                '🔥 Acces API pentru developeri'
+                '� ALL PRO features included',
+                '� Psychology-based analysis',
+                '� Weather impact predictions',
+                '� Advanced portfolio tracking',
+                '� 1-on-1 expert consultations',
+                '� Developer API access',
+                '💎 Custom betting bot creation',
+                '💎 ROI optimization tools'
             ],
-            'savings': 'Economisești 189 RON/an',
-            'exclusive': True
+            'savings': 'SAVE $59.89/year',
+            'exclusive': True,
+            'discount': '25% OFF'
         }
     }
+
+def get_remaining_generations(uid: int) -> int:
+    """Get remaining free generations for user"""
+    data = _load()
+    uid_str = str(uid)
+    
+    if uid_str not in data['users']:
+        # New user gets 2 free generations
+        return 2
+    
+    user = data['users'][uid_str]
+    plan = user.get('plan', 'free')
+    
+    # Paid users have unlimited generations
+    if plan != 'free':
+        expires = user.get('expires')
+        if expires:
+            try:
+                exp_date = datetime.strptime(expires, '%Y-%m-%d')
+                if datetime.now().date() <= exp_date.date():
+                    return float('inf')  # Unlimited for active subscribers
+            except:
+                pass
+    
+    # Free users: 2 - used
+    trial_used = user.get('trial_used', 0)
+    return max(0, 2 - trial_used)
+
+def format_remaining_generations(uid: int) -> str:
+    """Format remaining generations for display"""
+    remaining = get_remaining_generations(uid)
+    
+    if remaining == float('inf'):
+        return "♾️ **NELIMITAT**"
+    elif remaining > 0:
+        return f"🎯 **{remaining}/2** generări gratuite"
+    else:
+        return "❌ **0/2** - Upgrade pentru mai multe!"

@@ -18,7 +18,7 @@ from src.analytics.stats import (
     get_stats_summary, add_bet_record, update_bet_result, 
     get_monthly_chart, get_leaderboard, load_user_stats, save_user_stats
 )
-from src.utils.subs import plan_gate, get_user_stats, use_trial, log_user_activity, get_user_account_info, get_pricing_catalog, is_admin
+from src.utils.subs import plan_gate, get_user_stats, use_trial, log_user_activity, get_user_account_info, get_pricing_catalog, is_admin, get_remaining_generations, format_remaining_generations
 from src.analytics.strategies import (
     find_value_bets, detect_arbitrage_opportunities, build_accumulator,
     kelly_criterion_stake, martingale_protection_check
@@ -64,10 +64,7 @@ async def show_account_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }.get(account_info['plan'], '🆓 **FREE**')
     
     # Format remaining trials
-    if account_info['plan'] == 'free':
-        remaining_display = f"🎯 **{account_info['remaining_trials']}/2** generări gratuite"
-    else:
-        remaining_display = "♾️ **NELIMITAT**"
+    remaining_display = format_remaining_generations(user_id)
     
     # Format subscription status
     if account_info['subscription_active']:
@@ -116,47 +113,60 @@ async def show_subscription_menu(update: Update, context: ContextTypes.DEFAULT_T
     pricing = get_pricing_catalog()
     
     subscription_msg = [
-        "💎 **PLANURI DE ABONAMENT** 💎",
-        "═══════════════════════════════",
+        "💎 **PREMIUM SUBSCRIPTION PLANS** 💎",
+        "═══════════════════════════════════════",
         "",
-        "🎯 **Alege planul perfect pentru tine:**",
+        "🎯 **Choose your perfect plan with HUGE savings:**",
         ""
     ]
     
-    # Add each plan
+    # Add each plan with enhanced formatting
     for plan_name, plan_info in pricing.items():
         if plan_info.get('popular'):
-            subscription_msg.append(f"🔥 **{plan_name}** ⭐ *CEL MAI POPULAR*")
+            subscription_msg.append(f"🔥 **{plan_name} PLAN** ⭐ *MOST POPULAR!*")
         elif plan_info.get('exclusive'):
-            subscription_msg.append(f"👑 **{plan_name}** 💎 *EXCLUSIVE*")
+            subscription_msg.append(f"👑 **{plan_name} PLAN** 💎 *EXCLUSIVE*")
         else:
-            subscription_msg.append(f"⭐ **{plan_name}**")
+            subscription_msg.append(f"⭐ **{plan_name} PLAN**")
         
-        subscription_msg.append(f"💰 **{plan_info['price_monthly']}**")
-        subscription_msg.append(f"🎁 **{plan_info['price_yearly']}**")
+        # Show pricing with discount
+        subscription_msg.append(f"💰 Monthly: **{plan_info['price_monthly']}**")
+        subscription_msg.append(f"🎁 Yearly: **{plan_info['price_yearly']}**")
+        
+        if 'price_original' in plan_info:
+            subscription_msg.append(f"~~{plan_info['price_original']}~~ ➜ {plan_info['discount']}")
+        
         subscription_msg.append("")
         
-        # Add features
+        # Add features with better formatting
+        subscription_msg.append("**🎯 FEATURES:**")
         for feature in plan_info['features']:
             subscription_msg.append(f"  {feature}")
         
         if 'savings' in plan_info:
-            subscription_msg.append(f"  💡 *{plan_info['savings']}*")
+            subscription_msg.append(f"")
+            subscription_msg.append(f"💡 **{plan_info['savings']}** with yearly plan!")
         
         subscription_msg.append("")
-        subscription_msg.append("─────────────────────")
+        subscription_msg.append("─────────────────────────────")
         subscription_msg.append("")
     
     subscription_msg.extend([
-        "🚀 **De ce să alegi PariuSmart AI?**",
-        "✅ Predicții bazate pe AI avansat",
-        "✅ Analiză în timp real",
-        "✅ Suport expert 24/7",
-        "✅ ROI garantat sau înapoi banii!*",
+        "🚀 **Why choose PariuSmart AI?**",
+        "✅ Advanced machine learning predictions",
+        "✅ Real-time match analysis",
+        "✅ 24/7 expert support team",
+        "✅ 90%+ win rate guarantee*",
+        "✅ Money-back guarantee first month",
         "",
-        "🎁 **BONUS:** Prima săptămână GRATUIT!",
+        "🎁 **LIMITED TIME OFFER:**",
+        "🔥 **First week FREE** for all plans!",
+        "🔥 **30-day money-back guarantee**",
+        "🔥 **Instant activation** after payment",
         "",
-        "*Termeni și condiții se aplică"
+        "💳 **Payment methods:** PayPal, Stripe, Crypto",
+        "",
+        "*Based on our top performers' results"
     ])
     
     keyboard = InlineKeyboardMarkup([
@@ -706,7 +716,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "• Calculez Expected Value (EV) pentru profit",
             "• Iau în considerare meteo, știri, sentiment",
             "",
-            f"✨ **Status tău:** {user_stats['trial_remaining']} predicții gratuite rămase",
+            f"✨ **Status tău:** {format_remaining_generations(uid)}",
             "",
             "🚀 **Încearcă primul pick cu /today!**"
         ]
@@ -715,7 +725,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         welcome_msg = [
             f"👋 **Salut din nou, {user_name}!**",
             "",
-            f"🎁 **Îți mai rămân {user_stats['trial_remaining']} generări gratuite**",
+            f"🎁 **{format_remaining_generations(uid)}**",
             "",
             "📊 **Ultimele îmbunătățiri AI:**",
             "• Algoritmi de învățare actualizați zilnic",
@@ -792,10 +802,14 @@ async def cmd_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await show_trial_expired_message(update)
             return
         
-        # Show trial usage info
-        remaining = user_stats['trial_remaining'] - 1
-        trial_msg = f"🎁 Trial folosit! Îți mai rămân {remaining} generări gratuite."
-        await update.message.reply_text(trial_msg)
+        # Show remaining generations counter
+        remaining = get_remaining_generations(uid)
+        if remaining > 0:
+            trial_msg = f"🎁 **Generare consumată cu succes!**\n\n{format_remaining_generations(uid)}\n\n💡 Upgrade pentru predicții nelimitate!"
+        else:
+            trial_msg = f"🎁 **Ultima generare gratuită folosită!**\n\n❌ **0/2** generări rămase\n\n💎 **Upgrade acum pentru acces nelimitat!**"
+        
+        await update.message.reply_text(trial_msg, parse_mode='Markdown')
     
     lang = get_lang(uid)
     await update.message.reply_text(tr(lang,"processing"))
@@ -931,10 +945,14 @@ async def cmd_markets(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await show_trial_expired_message(update)
             return
         
-        # Show trial usage info
-        remaining = user_stats['trial_remaining'] - 1
-        trial_msg = f"🎁 Trial folosit! Îți mai rămân {remaining} generări gratuite."
-        await update.message.reply_text(trial_msg)
+        # Show remaining generations counter
+        remaining = get_remaining_generations(uid)
+        if remaining > 0:
+            trial_msg = f"🎁 **Generare markets consumată!**\n\n{format_remaining_generations(uid)}\n\n💡 Upgrade pentru predicții nelimitate!"
+        else:
+            trial_msg = f"🎁 **Ultima generare gratuită folosită!**\n\n❌ **0/2** generări rămase\n\n💎 **Upgrade acum pentru acces nelimitat!**"
+        
+        await update.message.reply_text(trial_msg, parse_mode='Markdown')
         
     lang = get_lang(uid)
     await update.message.reply_text(tr(lang,"processing"))
@@ -1523,34 +1541,45 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 for act in recent_activity[-3:]
             ]) if recent_activity else "Nicio activitate recentă"
             
+            # Calculate conversion rate
+            conversion_rate = 0
+            if stats['trial_users'] > 0:
+                conversion_rate = round((stats['active_subscribers'] / (stats['trial_users'] + stats['active_subscribers'])) * 100, 1)
+            
             admin_text = f"""
 🔑 **ADMIN DASHBOARD - BOGDAN** 🔑
 ════════════════════════════════
 
-📊 **STATISTICI UTILIZATORI:**
-├─ 👥 **Total utilizatori:** {stats['total_users']}
-├─ ⭐ **Abonați activi:** {stats['active_subscribers']}  
-├─ 🆓 **Utilizatori trial:** {stats['trial_users']}
-└─ ⚠️ **Abonamente expirate:** {stats['expired_users']}
+📊 **USER STATISTICS:**
+├─ 👥 **Total Users:** {stats['total_users']}
+├─ 💎 **Active Subscribers:** {stats['active_subscribers']} 
+├─ 🆓 **Trial Users:** {stats['trial_users']}
+├─ ⚠️ **Expired Subscriptions:** {stats['expired_users']}
+└─ 📈 **Conversion Rate:** {conversion_rate}%
 
-🎟️ **CODURI PROMO ACTIVE ({len(codes)}):**
+💰 **REVENUE TRACKING:**
+├─ 🔥 **BASIC potential:** ${stats['active_subscribers'] * 7.99:.2f}/month
+├─ 💎 **PRO potential:** ${stats['active_subscribers'] * 12.99:.2f}/month  
+└─ 🎯 **Target:** $1,000/month
+
+🎟️ **PROMO CODES ({len(codes)}):**
 {codes_text}
-{f"...și încă {len(codes)-5} coduri" if len(codes) > 5 else ""}
+{f"...and {len(codes)-5} more codes" if len(codes) > 5 else ""}
 
-🔄 **ACTIVITATE RECENTĂ:**
+🔄 **RECENT ACTIVITY:**
 {activity_text}
 
-⚙️ **COMENZI ADMIN DISPONIBILE:**
-• `/grant <user_id> <plan>` - Acordă BASIC/PRO/PREMIUM
-• `/users` - Listează toți utilizatorii  
-• `/admin` - Refresh dashboard
-• `/reset_trial <user_id>` - Reset trial
+⚙️ **ADMIN COMMANDS:**
+• `/grant <user_id> <plan>` - Grant BASIC/PRO/PREMIUM  
+• `/users` - List all users with status
+• `/admin` - Refresh this dashboard
+• `/reset_trial <user_id>` - Reset user trial
 
-💡 **EXEMPLE GRANT:**
-• `/grant 123456789 PRO` - Acordă PRO (30 zile)
-• `/grant 123456789 PREMIUM` - Acordă PREMIUM (30 zile)
+💡 **QUICK GRANT EXAMPLES:**
+• `/grant 123456789 PRO` - Grant PRO (30 days)
+• `/grant 123456789 PREMIUM` - Grant PREMIUM (30 days)
 
-🎯 **ID Admin:** `{uid}`
+🎯 **Admin ID:** `{uid}` | **Status:** ACTIVE
             """
             
             keyboard = [
@@ -2577,34 +2606,45 @@ După plată, folosește /redeem CODUL_TĂU pentru activare.
             for act in recent_activity[-3:]
         ]) if recent_activity else "Nicio activitate recentă"
         
+        # Calculate conversion rate
+        conversion_rate = 0
+        if stats['trial_users'] > 0:
+            conversion_rate = round((stats['active_subscribers'] / (stats['trial_users'] + stats['active_subscribers'])) * 100, 1)
+        
         admin_text = f"""
 🔑 **ADMIN DASHBOARD - BOGDAN** 🔑
 ════════════════════════════════
 
-📊 **STATISTICI UTILIZATORI:**
-├─ 👥 **Total utilizatori:** {stats['total_users']}
-├─ ⭐ **Abonați activi:** {stats['active_subscribers']}  
-├─ 🆓 **Utilizatori trial:** {stats['trial_users']}
-└─ ⚠️ **Abonamente expirate:** {stats['expired_users']}
+📊 **USER STATISTICS:**
+├─ 👥 **Total Users:** {stats['total_users']}
+├─ 💎 **Active Subscribers:** {stats['active_subscribers']} 
+├─ 🆓 **Trial Users:** {stats['trial_users']}
+├─ ⚠️ **Expired Subscriptions:** {stats['expired_users']}
+└─ 📈 **Conversion Rate:** {conversion_rate}%
 
-🎟️ **CODURI PROMO ACTIVE ({len(codes)}):**
+💰 **REVENUE TRACKING:**
+├─ 🔥 **BASIC subscribers:** ${stats['active_subscribers'] * 12.99:.2f}/month potential
+├─ 💎 **PRO subscribers:** ${stats['active_subscribers'] * 19.99:.2f}/month potential  
+└─ 🎯 **Target:** $1,000/month
+
+🎟️ **PROMO CODES ({len(codes)}):**
 {codes_text}
-{f"...și încă {len(codes)-5} coduri" if len(codes) > 5 else ""}
+{f"...and {len(codes)-5} more codes" if len(codes) > 5 else ""}
 
-🔄 **ACTIVITATE RECENTĂ:**
+🔄 **RECENT ACTIVITY:**
 {activity_text}
 
-⚙️ **COMENZI ADMIN DISPONIBILE:**
-• `/grant <user_id> <plan>` - Acordă BASIC/PRO/PREMIUM
-• `/users` - Listează toți utilizatorii  
-• `/admin` - Refresh dashboard
-• `/reset_trial <user_id>` - Reset trial
+⚙️ **ADMIN COMMANDS:**
+• `/grant <user_id> <plan>` - Grant BASIC/PRO/PREMIUM  
+• `/users` - List all users with status
+• `/admin` - Refresh this dashboard
+• `/reset_trial <user_id>` - Reset user trial
 
-💡 **EXEMPLE GRANT:**
-• `/grant 123456789 PRO` - Acordă PRO (30 zile)
-• `/grant 123456789 PREMIUM` - Acordă PREMIUM (30 zile)
+💡 **QUICK GRANT EXAMPLES:**
+• `/grant 123456789 PRO` - Grant PRO (30 days)
+• `/grant 123456789 PREMIUM` - Grant PREMIUM (30 days)
 
-🎯 **ID Admin:** `{uid}`
+🎯 **Admin ID:** `{uid}` | **Status:** ACTIVE
         """
         
         keyboard = [
@@ -2643,7 +2683,6 @@ După plată, folosește /redeem CODUL_TĂU pentru activare.
             return
         
         # Grant subscription
-        from src.utils.subs import grant_plan
         expires = (dt.datetime.now() + dt.timedelta(days=30)).strftime('%Y-%m-%d')
         
         # Create user if doesn't exist and grant plan
