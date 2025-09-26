@@ -20,6 +20,10 @@ def _save(data):
 # API
 
 def is_admin(uid: int) -> bool:
+    # Main admin ID - Bogdan
+    if uid == 1622719347:
+        return True
+    
     data = _load()
     return str(uid) in [str(a) for a in data.get('admins', [])]
 
@@ -239,4 +243,88 @@ def get_user_statistics() -> dict:
         'expired_users': expired_users,
         'total_codes': len(data.get('codes', {})),
         'total_admins': len(data.get('admins', []))
+    }
+
+def get_user_account_info(uid: int) -> dict:
+    """Get user account information for account menu"""
+    data = _load()
+    uid_str = str(uid)
+    
+    if uid_str not in data['users']:
+        # Create new user with trial
+        data['users'][uid_str] = {
+            'plan': 'free',
+            'expires': None,
+            'trial_used': 0,
+            'joined': datetime.now().isoformat()
+        }
+        _save(data)
+    
+    user = data['users'][uid_str]
+    plan = user.get('plan', 'free')
+    expires = user.get('expires')
+    trial_used = user.get('trial_used', 0)
+    joined = user.get('joined', 'Unknown')
+    
+    # Calculate remaining trials
+    remaining_trials = max(0, 2 - trial_used) if plan == 'free' else float('inf')
+    
+    # Check if subscription is active
+    subscription_active = False
+    if plan != 'free' and expires:
+        exp_date = datetime.strptime(expires, '%Y-%m-%d')
+        subscription_active = datetime.now().date() <= exp_date.date()
+    
+    return {
+        'user_id': uid,
+        'plan': plan,
+        'expires': expires,
+        'trial_used': trial_used,
+        'remaining_trials': remaining_trials,
+        'joined': joined,
+        'subscription_active': subscription_active
+    }
+
+def get_pricing_catalog() -> dict:
+    """Get pricing catalog for subscription plans"""
+    return {
+        'BASIC': {
+            'price_monthly': '29 RON/lună',
+            'price_yearly': '299 RON/an (2 luni GRATUIT)',
+            'features': [
+                '✅ 50 predicții/zi',
+                '✅ Analiza meciurilor LIVE',
+                '✅ Statistici detaliate',
+                '✅ Suport 24/7'
+            ],
+            'savings': 'Economisești 49 RON/an'
+        },
+        'PRO': {
+            'price_monthly': '49 RON/lună', 
+            'price_yearly': '499 RON/an (2 luni GRATUIT)',
+            'features': [
+                '✅ PREDICȚII NELIMITATE',
+                '✅ Analiza AI avansată',
+                '✅ Express builder automat',
+                '✅ Strategii personalizate',
+                '✅ Alerte PUSH instant',
+                '✅ Suport prioritar VIP'
+            ],
+            'savings': 'Economisești 89 RON/an',
+            'popular': True
+        },
+        'PREMIUM': {
+            'price_monthly': '99 RON/lună',
+            'price_yearly': '999 RON/an (3 luni GRATUIT)', 
+            'features': [
+                '🔥 TOATE funcțiile PRO',
+                '🔥 Analiza psihologică echipe',
+                '🔥 Predicții pe baza vremii',
+                '🔥 Tracking portofoliu avansat',
+                '🔥 Sesiuni 1-on-1 cu experți',
+                '🔥 Acces API pentru developeri'
+            ],
+            'savings': 'Economisești 189 RON/an',
+            'exclusive': True
+        }
     }

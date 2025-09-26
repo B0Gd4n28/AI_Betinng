@@ -18,7 +18,7 @@ from src.analytics.stats import (
     get_stats_summary, add_bet_record, update_bet_result, 
     get_monthly_chart, get_leaderboard, load_user_stats, save_user_stats
 )
-from src.utils.subs import plan_gate, get_user_stats, use_trial, log_user_activity
+from src.utils.subs import plan_gate, get_user_stats, use_trial, log_user_activity, get_user_account_info, get_pricing_catalog, is_admin
 from src.analytics.strategies import (
     find_value_bets, detect_arbitrage_opportunities, build_accumulator,
     kelly_criterion_stake, martingale_protection_check
@@ -46,6 +46,129 @@ def _reply(update, text, reply_markup=None):
 
 def today_iso():
     return dt.datetime.now(dt.timezone.utc).date().isoformat()
+
+async def show_account_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show user account information"""
+    user_id = update.effective_user.id
+    lang = get_lang(user_id)
+    
+    # Get account info
+    account_info = get_user_account_info(user_id)
+    
+    # Format plan display
+    plan_display = {
+        'free': '🆓 **FREE** (Trial)',
+        'BASIC': '⭐ **BASIC**',
+        'PRO': '🔥 **PRO**', 
+        'PREMIUM': '💎 **PREMIUM**'
+    }.get(account_info['plan'], '🆓 **FREE**')
+    
+    # Format remaining trials
+    if account_info['plan'] == 'free':
+        remaining_display = f"🎯 **{account_info['remaining_trials']}/2** generări gratuite"
+    else:
+        remaining_display = "♾️ **NELIMITAT**"
+    
+    # Format subscription status
+    if account_info['subscription_active']:
+        status_display = f"✅ **ACTIV** până la {account_info['expires']}"
+    elif account_info['plan'] != 'free':
+        status_display = f"⚠️ **EXPIRAT** din {account_info['expires']}"
+    else:
+        status_display = "🆓 **TRIAL ACTIV**"
+    
+    # Format join date
+    try:
+        join_date = dt.datetime.fromisoformat(account_info['joined']).strftime("%d.%m.%Y")
+    except:
+        join_date = "N/A"
+    
+    account_msg = [
+        "👤 **CONTUL MEU** 👤",
+        "═══════════════════",
+        "",
+        f"🆔 **User ID:** `{account_info['user_id']}`",
+        f"📊 **Plan:** {plan_display}",
+        f"⚡ **Status:** {status_display}",
+        f"{remaining_display}",
+        f"📅 **Membru din:** {join_date}",
+        "",
+        "🎯 **Utilizări Trial:** " + f"{account_info['trial_used']}/2",
+        "",
+        "💡 **Tip:** Upgrade pentru predicții nelimitate!"
+    ]
+    
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("💎 Upgrade Plan", callback_data="MENU_SUBSCRIPTION")],
+        [InlineKeyboardButton("👨‍💼 Contact Admin", callback_data="CONTACT_ADMIN")],
+        [InlineKeyboardButton("🔙 Meniu Principal", callback_data="MENU_MAIN")]
+    ])
+    
+    q = update.callback_query
+    await q.edit_message_text("\n".join(account_msg), reply_markup=keyboard, parse_mode='Markdown')
+
+async def show_subscription_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show subscription plans and pricing"""
+    user_id = update.effective_user.id
+    lang = get_lang(user_id)
+    
+    # Get pricing catalog
+    pricing = get_pricing_catalog()
+    
+    subscription_msg = [
+        "💎 **PLANURI DE ABONAMENT** 💎",
+        "═══════════════════════════════",
+        "",
+        "🎯 **Alege planul perfect pentru tine:**",
+        ""
+    ]
+    
+    # Add each plan
+    for plan_name, plan_info in pricing.items():
+        if plan_info.get('popular'):
+            subscription_msg.append(f"🔥 **{plan_name}** ⭐ *CEL MAI POPULAR*")
+        elif plan_info.get('exclusive'):
+            subscription_msg.append(f"👑 **{plan_name}** 💎 *EXCLUSIVE*")
+        else:
+            subscription_msg.append(f"⭐ **{plan_name}**")
+        
+        subscription_msg.append(f"💰 **{plan_info['price_monthly']}**")
+        subscription_msg.append(f"🎁 **{plan_info['price_yearly']}**")
+        subscription_msg.append("")
+        
+        # Add features
+        for feature in plan_info['features']:
+            subscription_msg.append(f"  {feature}")
+        
+        if 'savings' in plan_info:
+            subscription_msg.append(f"  💡 *{plan_info['savings']}*")
+        
+        subscription_msg.append("")
+        subscription_msg.append("─────────────────────")
+        subscription_msg.append("")
+    
+    subscription_msg.extend([
+        "🚀 **De ce să alegi PariuSmart AI?**",
+        "✅ Predicții bazate pe AI avansat",
+        "✅ Analiză în timp real",
+        "✅ Suport expert 24/7",
+        "✅ ROI garantat sau înapoi banii!*",
+        "",
+        "🎁 **BONUS:** Prima săptămână GRATUIT!",
+        "",
+        "*Termeni și condiții se aplică"
+    ])
+    
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔥 BASIC Plan", callback_data="SELECT_BASIC"),
+         InlineKeyboardButton("⭐ PRO Plan", callback_data="SELECT_PRO")],
+        [InlineKeyboardButton("💎 PREMIUM Plan", callback_data="SELECT_PREMIUM")],
+        [InlineKeyboardButton("👨‍💼 Vorbește cu Adminul", callback_data="CONTACT_ADMIN")],
+        [InlineKeyboardButton("🔙 Înapoi", callback_data="MENU_ACCOUNT")]
+    ])
+    
+    q = update.callback_query
+    await q.edit_message_text("\n".join(subscription_msg), reply_markup=keyboard, parse_mode='Markdown')
 
 def compute_form_points(matches: list, team_side: str) -> float:
     """
@@ -89,6 +212,10 @@ def _kb_main(lang):
          InlineKeyboardButton("🎯 Strategies 🎯", callback_data="MENU_STRATEGIES")],
         [InlineKeyboardButton("🏆 Social & Challenges 🏆", callback_data="MENU_SOCIAL")],
         [InlineKeyboardButton("🤖 Personal AI 🤖", callback_data="MENU_AI")],
+        
+        # Account & Subscription
+        [InlineKeyboardButton("👤 Contul Meu 👤", callback_data="MENU_ACCOUNT"),
+         InlineKeyboardButton("💎 Abonamente 💎", callback_data="MENU_SUBSCRIPTION")],
         
         # Settings
         [InlineKeyboardButton("🌐 " + tr(lang,"menu_lang"), callback_data="MENU_LANG"),
@@ -1205,6 +1332,240 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.edit_message_text("📋 **Track Pariu Nou**\n\nFolosește `/track Match | Market | Selection | Odds | Stake`\n\n**Exemplu:**\n`/track Arsenal vs Chelsea | 1X2 | Arsenal | 1.85 | 100`", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Stats", callback_data="MENU_STATS")]]))
         return
 
+    # 👤 Account Menu
+    if data == "MENU_ACCOUNT":
+        loading_msg = await send_loading_animation(update, "success")
+        await q.edit_message_text("👤⚡ **Loading contul tău...** 📊\n💎 **Account info loading...**", parse_mode='Markdown')
+        
+        await show_account_menu(update, context)
+        await delete_animation_message(loading_msg)
+        return
+    
+    # 💎 Subscription Menu
+    if data == "MENU_SUBSCRIPTION":
+        loading_msg = await send_loading_animation(update, "money")
+        await q.edit_message_text("💎🚀 **Loading abonamente...** 💰\n⭐ **Premium plans loading...**", parse_mode='Markdown')
+        
+        await show_subscription_menu(update, context)
+        await delete_animation_message(loading_msg)
+        return
+    
+    # Contact Admin
+    if data == "CONTACT_ADMIN":
+        admin_contact_msg = [
+            "👨‍💼 **Contact Administrator**",
+            "",
+            "📞 Pentru abonamente și suport premium:",
+            "🔹 Telegram: @PariuSmartAdmin",
+            "🔹 Email: support@pariusmart.ro",
+            "",
+            "💬 **Sau scrie-mi direct aici ce dorești și îți voi răspunde în cel mai scurt timp!**",
+            "",
+            "⚡ **Răspuns garantat în maxim 2 ore!**"
+        ]
+        
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("💎 Vezi Abonamente", callback_data="MENU_SUBSCRIPTION")],
+            [InlineKeyboardButton("🔙 Înapoi", callback_data="MENU_ACCOUNT")]
+        ])
+        
+        await q.edit_message_text("\n".join(admin_contact_msg), reply_markup=keyboard, parse_mode='Markdown')
+        return
+    
+    # Plan selection handlers
+    if data.startswith("SELECT_"):
+        plan_name = data.split("_")[1]
+        pricing = get_pricing_catalog()
+        
+        plan_info = pricing.get(plan_name, {})
+        
+        selection_msg = [
+            f"💎 **{plan_name} PLAN SELECTAT** 💎",
+            "═══════════════════════════",
+            "",
+            f"💰 **Prețuri:**",
+            f"📅 Lunar: **{plan_info.get('price_monthly', 'N/A')}**",
+            f"📅 Anual: **{plan_info.get('price_yearly', 'N/A')}**",
+            "",
+            "🎯 **Beneficii:**"
+        ]
+        
+        for feature in plan_info.get('features', []):
+            selection_msg.append(f"  {feature}")
+        
+        selection_msg.extend([
+            "",
+            "🚀 **Pentru a activa abonamentul:**",
+            "1️⃣ Contactează administratorul",
+            "2️⃣ Alege modalitatea de plată", 
+            "3️⃣ Primești acces instant!",
+            "",
+            "💡 **Plăți acceptate:**",
+            "🔹 Transfer bancar",
+            "🔹 PayPal",
+            "🔹 Revolut",
+            "🔹 Card bancar",
+            "",
+            "⚡ **Activare automată în 5 minute!**"
+        ])
+        
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("💬 Contactează Admin ACUM", callback_data="CONTACT_ADMIN")],
+            [InlineKeyboardButton("🔄 Alege Alt Plan", callback_data="MENU_SUBSCRIPTION")],
+            [InlineKeyboardButton("🔙 Contul Meu", callback_data="MENU_ACCOUNT")]
+        ])
+        
+        await q.edit_message_text("\n".join(selection_msg), reply_markup=keyboard, parse_mode='Markdown')
+        return
+    
+    # Admin callbacks
+    if data.startswith("ADMIN_"):
+        uid = update.effective_user.id
+        if not is_admin(uid):
+            await q.answer("⛔ Doar admin.", show_alert=True)
+            return
+        
+        if data == "ADMIN_USERS":
+            # Show users list
+            from src.utils.subs import _load
+            data_users = _load()
+            users = data_users.get('users', {})
+            
+            if not users:
+                await q.edit_message_text("📭 **Niciun utilizator înregistrat.**", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Admin Dashboard", callback_data="ADMIN_REFRESH")]]))
+                return
+            
+            users_list = ["👥 **TOP UTILIZATORI** 👥", "═══════════════════════", ""]
+            
+            # Sort by plan priority
+            plan_priority = {'PREMIUM': 0, 'PRO': 1, 'BASIC': 2, 'free': 3}
+            sorted_users = sorted(users.items(), key=lambda x: plan_priority.get(x[1].get('plan', 'free'), 4))
+            
+            for uid_str, user_data in sorted_users[:10]:  # Top 10 users
+                plan = user_data.get('plan', 'free')
+                expires = user_data.get('expires', 'N/A')
+                trial_used = user_data.get('trial_used', 0)
+                
+                plan_emoji = {'PREMIUM': '💎', 'PRO': '🔥', 'BASIC': '⭐', 'free': '🆓'}.get(plan, '❓')
+                
+                if plan != 'free' and expires:
+                    try:
+                        exp_date = dt.datetime.strptime(expires, '%Y-%m-%d')
+                        status = "✅" if dt.datetime.now().date() <= exp_date.date() else "⚠️"
+                    except:
+                        status = "❓"
+                else:
+                    status = f"🎯{trial_used}/2"
+                
+                users_list.append(f"{plan_emoji} `{uid_str}` | {plan} | {status}")
+            
+            users_list.extend([
+                "",
+                f"📊 **Total:** {len(users)} utilizatori",
+                "💡 Folosește `/grant <user_id> <plan>`"
+            ])
+            
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("🔄 Refresh", callback_data="ADMIN_USERS")],
+                [InlineKeyboardButton("🔙 Admin Dashboard", callback_data="ADMIN_REFRESH")]
+            ])
+            
+            await q.edit_message_text("\n".join(users_list), reply_markup=keyboard, parse_mode='Markdown')
+            return
+        
+        if data == "ADMIN_STATS":
+            # Show detailed statistics
+            from src.utils.subs import get_user_statistics, get_user_activity
+            stats = get_user_statistics()
+            recent_activity = get_user_activity(limit=10)
+            
+            stats_msg = [
+                "📊 **STATISTICI AVANSATE** 📊",
+                "═══════════════════════════════",
+                "",
+                f"👥 **Utilizatori:** {stats['total_users']}",
+                f"⭐ **Abonați activi:** {stats['active_subscribers']}",
+                f"🆓 **Trial users:** {stats['trial_users']}",
+                f"⚠️ **Abonamente expirate:** {stats['expired_users']}",
+                "",
+                "🔄 **ACTIVITATE RECENTĂ:**"
+            ]
+            
+            for act in recent_activity[-5:]:
+                timestamp = act.get('timestamp', 'N/A')[:16]
+                uid_short = str(act.get('uid', 'N/A'))[:6]
+                action = act.get('action', 'N/A')
+                stats_msg.append(f"• {timestamp} | {uid_short}... | {action}")
+            
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton("👥 Vezi Utilizatori", callback_data="ADMIN_USERS")],
+                [InlineKeyboardButton("🔙 Admin Dashboard", callback_data="ADMIN_REFRESH")]
+            ])
+            
+            await q.edit_message_text("\n".join(stats_msg), reply_markup=keyboard, parse_mode='Markdown')
+            return
+        
+        if data == "ADMIN_REFRESH":
+            # Refresh admin dashboard
+            await send_animated_sticker(update, "success")
+            
+            # Get comprehensive stats
+            from src.utils.subs import get_user_statistics, list_active_codes, get_user_activity
+            
+            stats = get_user_statistics()
+            codes = list_active_codes()
+            codes_text = "\n".join([f"• `{code}`" for code in codes[:5]]) if codes else "Niciun cod activ"
+            
+            # Recent activity
+            recent_activity = get_user_activity(limit=5)
+            activity_text = "\n".join([
+                f"• {act.get('action', 'N/A')} - User {str(act.get('uid', 'N/A'))[:6]}... ({act.get('timestamp', 'N/A')[:16]})"
+                for act in recent_activity[-3:]
+            ]) if recent_activity else "Nicio activitate recentă"
+            
+            admin_text = f"""
+🔑 **ADMIN DASHBOARD - BOGDAN** 🔑
+════════════════════════════════
+
+📊 **STATISTICI UTILIZATORI:**
+├─ 👥 **Total utilizatori:** {stats['total_users']}
+├─ ⭐ **Abonați activi:** {stats['active_subscribers']}  
+├─ 🆓 **Utilizatori trial:** {stats['trial_users']}
+└─ ⚠️ **Abonamente expirate:** {stats['expired_users']}
+
+🎟️ **CODURI PROMO ACTIVE ({len(codes)}):**
+{codes_text}
+{f"...și încă {len(codes)-5} coduri" if len(codes) > 5 else ""}
+
+🔄 **ACTIVITATE RECENTĂ:**
+{activity_text}
+
+⚙️ **COMENZI ADMIN DISPONIBILE:**
+• `/grant <user_id> <plan>` - Acordă BASIC/PRO/PREMIUM
+• `/users` - Listează toți utilizatorii  
+• `/admin` - Refresh dashboard
+• `/reset_trial <user_id>` - Reset trial
+
+💡 **EXEMPLE GRANT:**
+• `/grant 123456789 PRO` - Acordă PRO (30 zile)
+• `/grant 123456789 PREMIUM` - Acordă PREMIUM (30 zile)
+
+🎯 **ID Admin:** `{uid}`
+            """
+            
+            keyboard = [
+                [InlineKeyboardButton("👥 Lista Utilizatori", callback_data="ADMIN_USERS")],
+                [InlineKeyboardButton("📊 Statistici Avansate", callback_data="ADMIN_STATS")],
+                [InlineKeyboardButton("🔄 Refresh Dashboard", callback_data="ADMIN_REFRESH")]
+            ]
+            
+            await q.edit_message_text(
+                admin_text, 
+                parse_mode='Markdown',
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return
+
     # Main menu navigation callback
     if data == "main_menu":
         await send_animated_sticker(update, "welcome") 
@@ -2197,10 +2558,14 @@ După plată, folosește /redeem CODUL_TĂU pentru activare.
     async def admin_cmd(update, context):
         uid = update.effective_user.id
         if not is_admin(uid):
-            await update.message.reply_text("⛔ Doar admin.")
+            await update.message.reply_text("⛔ Doar admin (ID: 1622719347).")
             return
         
+        await send_animated_sticker(update, "success")
+        
         # Get comprehensive stats
+        from src.utils.subs import get_user_statistics, list_active_codes, get_user_activity
+        
         stats = get_user_statistics()
         codes = list_active_codes()
         codes_text = "\n".join([f"• `{code}`" for code in codes[:5]]) if codes else "Niciun cod activ"
@@ -2208,41 +2573,44 @@ După plată, folosește /redeem CODUL_TĂU pentru activare.
         # Recent activity
         recent_activity = get_user_activity(limit=5)
         activity_text = "\n".join([
-            f"• {act['action']} - User {act['uid'][:6]}..."
+            f"• {act.get('action', 'N/A')} - User {str(act.get('uid', 'N/A'))[:6]}... ({act.get('timestamp', 'N/A')[:16]})"
             for act in recent_activity[-3:]
         ]) if recent_activity else "Nicio activitate recentă"
         
         admin_text = f"""
-🔑 **Admin Dashboard**
+🔑 **ADMIN DASHBOARD - BOGDAN** 🔑
+════════════════════════════════
 
-📊 **Statistici Utilizatori:**
-• **Total utilizatori:** {stats['total_users']}
-• **Abonați activi:** {stats['active_subscribers']}  
-• **Utilizatori trial:** {stats['trial_users']}
-• **Abonamente expirate:** {stats['expired_users']}
+📊 **STATISTICI UTILIZATORI:**
+├─ 👥 **Total utilizatori:** {stats['total_users']}
+├─ ⭐ **Abonați activi:** {stats['active_subscribers']}  
+├─ 🆓 **Utilizatori trial:** {stats['trial_users']}
+└─ ⚠️ **Abonamente expirate:** {stats['expired_users']}
 
-🎟️ **Coduri Promo Active ({len(codes)}):**
+🎟️ **CODURI PROMO ACTIVE ({len(codes)}):**
 {codes_text}
-{f"...și încă {len(codes)-5}" if len(codes) > 5 else ""}
+{f"...și încă {len(codes)-5} coduri" if len(codes) > 5 else ""}
 
-🔄 **Activitate Recentă:**
+🔄 **ACTIVITATE RECENTĂ:**
 {activity_text}
 
-⚙️ **Comenzi Admin:**
-• `/grant <zile> <plan> <user_id>` - Acordă abonament
+⚙️ **COMENZI ADMIN DISPONIBILE:**
+• `/grant <user_id> <plan>` - Acordă BASIC/PRO/PREMIUM
+• `/users` - Listează toți utilizatorii  
 • `/admin` - Refresh dashboard
-• `/reset_trial <user_id>` - Reset trial utilizator
+• `/reset_trial <user_id>` - Reset trial
 
-💡 **Adăugare cod nou în data/subscriptions.json:**
-```json
-{{"NEWCODE": {{"plan": "starter", "days": 30}}}}
-```
+💡 **EXEMPLE GRANT:**
+• `/grant 123456789 PRO` - Acordă PRO (30 zile)
+• `/grant 123456789 PREMIUM` - Acordă PREMIUM (30 zile)
+
+🎯 **ID Admin:** `{uid}`
         """
         
         keyboard = [
-            [InlineKeyboardButton("📊 Statistici Detaliate", callback_data="ADMIN_STATS")],
-            [InlineKeyboardButton("🎟️ Gestionează Coduri", callback_data="ADMIN_CODES")],
-            [InlineKeyboardButton("👥 Activitate Utilizatori", callback_data="ADMIN_ACTIVITY")]
+            [InlineKeyboardButton("� Lista Utilizatori", callback_data="ADMIN_USERS")],
+            [InlineKeyboardButton("📊 Statistici Avansate", callback_data="ADMIN_STATS")],
+            [InlineKeyboardButton("� Refresh Dashboard", callback_data="ADMIN_REFRESH")]
         ]
         
         await update.message.reply_text(
@@ -2250,6 +2618,130 @@ După plată, folosește /redeem CODUL_TĂU pentru activare.
             parse_mode='Markdown',
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
+
+    async def grant_cmd(update, context):
+        """Grant subscription plan to user"""
+        uid = update.effective_user.id
+        if not is_admin(uid):
+            await update.message.reply_text("⛔ Doar admin (ID: 1622719347).")
+            return
+        
+        args = context.args
+        if len(args) != 2:
+            await update.message.reply_text("Format: `/grant <user_id> <plan>`\n\nPlanuri: BASIC, PRO, PREMIUM")
+            return
+        
+        try:
+            target_uid = int(args[0])
+            plan = args[1].upper()
+        except ValueError:
+            await update.message.reply_text("❌ ID utilizator invalid.")
+            return
+        
+        if plan not in ['BASIC', 'PRO', 'PREMIUM']:
+            await update.message.reply_text("❌ Plan invalid. Folosește: BASIC, PRO, PREMIUM")
+            return
+        
+        # Grant subscription
+        from src.utils.subs import grant_plan
+        expires = (dt.datetime.now() + dt.timedelta(days=30)).strftime('%Y-%m-%d')
+        
+        # Create user if doesn't exist and grant plan
+        from src.utils.subs import _load, _save
+        data = _load()
+        uid_str = str(target_uid)
+        
+        if uid_str not in data['users']:
+            data['users'][uid_str] = {
+                'plan': 'free',
+                'expires': None,
+                'trial_used': 0,
+                'joined': dt.datetime.now().isoformat()
+            }
+        
+        data['users'][uid_str]['plan'] = plan
+        data['users'][uid_str]['expires'] = expires
+        _save(data)
+        
+        # Log activity
+        log_user_activity(target_uid, f"ADMIN_GRANT: {plan} plan by admin {uid}")
+        
+        success_msg = f"""
+✅ **ABONAMENT ACORDAT CU SUCCES!**
+
+👤 **Utilizator:** `{target_uid}`
+💎 **Plan:** {plan}
+📅 **Valabil până:** {expires}
+👨‍💼 **Acordat de:** Admin {uid}
+
+🚀 **Utilizatorul are acum acces complet!**
+        """
+        
+        await send_animated_sticker(update, "success")
+        await update.message.reply_text(success_msg, parse_mode='Markdown')
+
+    async def users_cmd(update, context):
+        """List all users with their subscription status"""
+        uid = update.effective_user.id
+        if not is_admin(uid):
+            await update.message.reply_text("⛔ Doar admin (ID: 1622719347).")
+            return
+        
+        await send_animated_sticker(update, "prediction")
+        
+        from src.utils.subs import _load
+        data = _load()
+        users = data.get('users', {})
+        
+        if not users:
+            await update.message.reply_text("📭 Niciun utilizator înregistrat.")
+            return
+        
+        users_list = ["👥 **LISTA UTILIZATORI** 👥", "═══════════════════════════", ""]
+        
+        # Sort by plan priority
+        plan_priority = {'PREMIUM': 0, 'PRO': 1, 'BASIC': 2, 'free': 3}
+        sorted_users = sorted(users.items(), key=lambda x: plan_priority.get(x[1].get('plan', 'free'), 4))
+        
+        for uid_str, user_data in sorted_users[:20]:  # Limit to 20 users
+            plan = user_data.get('plan', 'free')
+            expires = user_data.get('expires', 'N/A')
+            trial_used = user_data.get('trial_used', 0)
+            
+            # Plan emoji
+            plan_emoji = {
+                'PREMIUM': '💎',
+                'PRO': '🔥', 
+                'BASIC': '⭐',
+                'free': '🆓'
+            }.get(plan, '❓')
+            
+            # Status
+            if plan != 'free' and expires:
+                try:
+                    exp_date = dt.datetime.strptime(expires, '%Y-%m-%d')
+                    if dt.datetime.now().date() <= exp_date.date():
+                        status = "✅ ACTIV"
+                    else:
+                        status = "⚠️ EXPIRAT"
+                except:
+                    status = "❓ UNKNOWN"
+            else:
+                status = f"🎯 Trial {trial_used}/2"
+            
+            users_list.append(f"{plan_emoji} **{uid_str[:6]}...** | {plan} | {status}")
+        
+        if len(users) > 20:
+            users_list.append(f"\n... și încă {len(users) - 20} utilizatori")
+        
+        users_list.extend([
+            "",
+            f"📊 **Total:** {len(users)} utilizatori",
+            "",
+            "💡 **Pentru detalii:** `/grant <user_id> <plan>`"
+        ])
+        
+        await update.message.reply_text("\n".join(users_list), parse_mode='Markdown')
 
     async def reset_trial_cmd(update, context):
         uid = update.effective_user.id
@@ -2278,6 +2770,8 @@ După plată, folosește /redeem CODUL_TĂU pentru activare.
     app.add_handler(CommandHandler("status", status_cmd))
     app.add_handler(CommandHandler("grant", grant_cmd))
     app.add_handler(CommandHandler("admin", admin_cmd))
+    app.add_handler(CommandHandler("grant", grant_cmd))
+    app.add_handler(CommandHandler("users", users_cmd))
     app.add_handler(CommandHandler("reset_trial", reset_trial_cmd))
     # --- END SUBSCRIPTIONS MVP ---
 
