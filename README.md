@@ -346,6 +346,43 @@ Prob combinată≈0.218 | Cote totale 4.81 | EV +0.049
 - [ ] **Live betting** cu updates timp real
 - [ ] **Portfolio management** cu bankroll tracking
 
+## 🔒 Abonamente (MVP fără server)
+
+### Configurare Manuală Coduri Promo
+
+Pentru a adăuga coduri promo, editează manual `data/subscriptions.json`:
+
+```json
+{
+  "admins": [123456789],
+  "users": {},
+  "codes": {
+    "PROMO30": {"plan": "starter", "days": 30},
+    "VIP90": {"plan": "pro", "days": 90}
+  }
+}
+```
+
+### Comenzi Abonamente
+
+- `/subscribe` → Afișează planuri disponibile cu linkuri de plată
+- `/redeem CODUL_TĂU` → Activează abonament cu cod promo
+- `/status` → Verifică planul curent și data expirării  
+- `/grant <zile> <plan> <id_user>` → Doar admin; acordă zile unui utilizator
+
+### Planuri Disponibile
+
+- **Free**: Acces limitat la `/today`
+- **Starter** (€9.99/lună): Acces la `/markets`, expres max 3 selecții
+- **Pro** (€19.99/lună): Acces complet, expres max 4 selecții
+
+### Integrare Viitoare
+
+Ulterior vom integra:
+- **Stripe/Telegram Payments** cu webhook automat
+- **Portal self-service** pentru gestionare abonamente
+- **Analytics avansate** per plan de utilizator
+
 ## ⚠️ Disclaimer Legal
 
 **Pariurile implică riscuri financiare semnificative. Vârsta minimă: 18 ani.**
@@ -356,6 +393,8 @@ Prob combinată≈0.218 | Cote totale 4.81 | EV +0.049
 - Joacă responsabil și cere ajutor dacă dezvolți dependență
 
 Bot-ul este destinat **exclusiv scopurilor educaționale și de divertisment**.
+
+**Documente legale**: [Termeni](TERMS.md) | [Privacy](PRIVACY.md) | [Disclaimer](DISCLAIMER.md)
 
 ---
 
