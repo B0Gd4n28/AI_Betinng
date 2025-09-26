@@ -2939,4 +2939,3 @@ După plată, folosește /redeem CODUL_TĂU pentru activare.
 
 if __name__ == "__main__":
     main()
-    main()
