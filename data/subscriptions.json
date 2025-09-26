@@ -2,8 +2,8 @@
   "admins": [],
   "users": {
     "1622719347": {
-      "plan": "free",
-      "expires": null,
+      "plan": "PRO",
+      "expires": "2025-10-26",
       "trial_used": 0,
       "joined": "2025-09-26T13:42:12.232187"
     },
@@ -14,5 +14,13 @@
       "joined": "2025-09-26T13:45:39.060452"
     }
   },
-  "codes": {}
+  "codes": {},
+  "activity_log": [
+    {
+      "uid": 1622719347,
+      "action": "ADMIN_GRANT: PRO plan by admin 1622719347",
+      "timestamp": "2025-09-26T14:02:37.089112",
+      "ip": null
+    }
+  ]
 }

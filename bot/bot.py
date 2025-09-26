@@ -332,44 +332,48 @@ async def delete_animation_message(message):
 async def show_trial_expired_message(update):
     """Show educational message when trial is expired"""
     educational_msg = """
-🤖🎓 **Despre PariuSmart AI**
+❌ **TRIAL EXPIRAT - Treci la Abonament!**
 
-**Cum funcționează?**
-🧠 Folosesc Inteligența Artificială pentru a analiza:
-• Statistici echipe din ultimele 5 meciuri
-• Cote de la multiple case de pariuri
-• Condiții meteo și factori contextuali
-• Sentiment din știri și social media
+🎯 **Ai consumat cele 2 generări gratuite!**
 
-**De ce să alegi PariuSmart AI?**
-✅ **Transparență 100%** - Îți explic fiecare predicție
-✅ **Învățare continuă** - Algoritmii se îmbunătățesc zilnic
-✅ **Expected Value** - Calculez profitabilitatea fiecărui pariu
-✅ **Risk Management** - Te ajut să pariezi responsabil
+� **Ce pierzi fără abonament?**
+• Predicții AI bazate pe machine learning
+• Analize în timp real pentru 1000+ meciuri
+• Expected Value calculations pentru profit
+• Expresuri optimizate automat
 
-**🎁 Trial-ul tău gratuit s-a încheiat!**
+💎 **PLANURI PREMIUM cu prețuri super:**
 
-**Alege un plan pentru acces nelimitat:**
+🔥 **BASIC - $7.99/month**
+✅ 50 AI predictions daily
+✅ LIVE match analysis  
+✅ Detailed statistics
+✅ 24/7 support
 
-🥉 **Starter (€9.99/lună)**
-• Acces la toate piețele (1X2, O/U, BTTS)
-• Expresuri cu max 3 selecții
-• Predicții zilnice nelimitate
+⭐ **PRO - $12.99/month** (POPULAR!)
+✅ UNLIMITED AI PREDICTIONS
+✅ Advanced ML algorithms
+✅ Auto express builder
+✅ Personal strategies
 
-🥇 **Pro (€19.99/lună)**  
-• Tot ce include Starter +
-• Analytics personal și statistici
-• Expresuri cu max 4 selecții
-• Management bankroll cu Kelly Criterion
+💎 **PREMIUM - $19.99/month** 
+✅ ALL PRO features
+✅ Psychology-based analysis
+✅ 1-on-1 expert consultations
+✅ Developer API access
 
-💡 **Observație:** Nu garantez profit, dar îți ofer cele mai bune analize bazate pe date reale și AI.
+🎁 **OFERTĂ LIMITATĂ:**
+• Prima săptămână GRATUITĂ!
+• 30-day money-back guarantee
+• Activare instantanee
 
-Folosește /subscribe pentru a alege planul potrivit! 🚀
+💳 **Plăți:** PayPal, Stripe, Crypto
     """
     
     keyboard = [
-        [InlineKeyboardButton("💳 Vezi Planurile", callback_data="MENU_SUBSCRIBE")],
-        [InlineKeyboardButton("📊 Cum Funcționează AI", callback_data="ABOUT_AI")],
+        [InlineKeyboardButton("� Vezi Abonamente", callback_data="MENU_SUBSCRIPTION")],
+        [InlineKeyboardButton("�‍💼 Contact Admin", callback_data="CONTACT_ADMIN")],
+        [InlineKeyboardButton("👤 Contul Meu", callback_data="MENU_ACCOUNT")],
         [InlineKeyboardButton("🔙 Meniu Principal", callback_data="MENU_MAIN")]
     ]
     
@@ -802,12 +806,14 @@ async def cmd_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await show_trial_expired_message(update)
             return
         
-        # Show remaining generations counter
+        # Show remaining generations counter (after using one)
         remaining = get_remaining_generations(uid)
+        remaining_text = format_remaining_generations(uid)
+        
         if remaining > 0:
-            trial_msg = f"🎁 **Generare consumată cu succes!**\n\n{format_remaining_generations(uid)}\n\n💡 Upgrade pentru predicții nelimitate!"
+            trial_msg = f"🎁 **Generare consumată cu succes!**\n\n{remaining_text}\n\n💡 Upgrade pentru predicții nelimitate!"
         else:
-            trial_msg = f"🎁 **Ultima generare gratuită folosită!**\n\n❌ **0/2** generări rămase\n\n💎 **Upgrade acum pentru acces nelimitat!**"
+            trial_msg = f"🎁 **Ultima generare gratuită folosită!**\n\n❌ **0/2** generări rămase\n\n💎 **Upgrade ACUM pentru acces nelimitat!**\n\n👤 Apasă 'Contul Meu' → 'Contact Admin'"
         
         await update.message.reply_text(trial_msg, parse_mode='Markdown')
     
@@ -945,12 +951,14 @@ async def cmd_markets(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await show_trial_expired_message(update)
             return
         
-        # Show remaining generations counter
+        # Show remaining generations counter (after using one)
         remaining = get_remaining_generations(uid)
+        remaining_text = format_remaining_generations(uid)
+        
         if remaining > 0:
-            trial_msg = f"🎁 **Generare markets consumată!**\n\n{format_remaining_generations(uid)}\n\n💡 Upgrade pentru predicții nelimitate!"
+            trial_msg = f"🎁 **Generare markets consumată!**\n\n{remaining_text}\n\n💡 Upgrade pentru predicții nelimitate!"
         else:
-            trial_msg = f"🎁 **Ultima generare gratuită folosită!**\n\n❌ **0/2** generări rămase\n\n💎 **Upgrade acum pentru acces nelimitat!**"
+            trial_msg = f"🎁 **Ultima generare gratuită folosită!**\n\n❌ **0/2** generări rămase\n\n💎 **Upgrade ACUM pentru acces nelimitat!**\n\n👤 Apasă 'Contul Meu' → 'Contact Admin'"
         
         await update.message.reply_text(trial_msg, parse_mode='Markdown')
         

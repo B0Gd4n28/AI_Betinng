@@ -364,9 +364,10 @@ def get_remaining_generations(uid: int) -> int:
             except:
                 pass
     
-    # Free users: 2 - used
+    # Free users: 2 - used (ensure we get current usage)
     trial_used = user.get('trial_used', 0)
-    return max(0, 2 - trial_used)
+    remaining = max(0, 2 - trial_used)
+    return remaining
 
 def format_remaining_generations(uid: int) -> str:
     """Format remaining generations for display"""
