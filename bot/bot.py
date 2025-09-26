@@ -792,30 +792,40 @@ async def health(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
-    can_access, msg = plan_gate(uid, 'today')
+    user_stats = get_user_stats(uid)
     
-    if not can_access:
-        # Show educational message for trial expired users
+    # Check if user has active subscription
+    if user_stats['plan'] != 'free':
+        # Paid user - unlimited access
+        lang = get_lang(uid)
+        await update.message.reply_text(tr(lang,"processing"))
+        date = today_iso()
+        await picks_for_date(update, context, date, lang)
+        return
+    
+    # Free user - check trial usage BEFORE generating
+    remaining_before = get_remaining_generations(uid)
+    if remaining_before <= 0:
+        # No trials left - show upgrade message
         await show_trial_expired_message(update)
         return
     
-    # Use trial if free user
-    user_stats = get_user_stats(uid)
-    if user_stats['plan'] == 'free':
-        if not use_trial(uid):
-            await show_trial_expired_message(update)
-            return
-        
-        # Show remaining generations counter (after using one)
-        remaining = get_remaining_generations(uid)
-        remaining_text = format_remaining_generations(uid)
-        
-        if remaining > 0:
-            trial_msg = f"🎁 **Generare consumată cu succes!**\n\n{remaining_text}\n\n💡 Upgrade pentru predicții nelimitate!"
-        else:
-            trial_msg = f"🎁 **Ultima generare gratuită folosită!**\n\n❌ **0/2** generări rămase\n\n💎 **Upgrade ACUM pentru acces nelimitat!**\n\n👤 Apasă 'Contul Meu' → 'Contact Admin'"
-        
-        await update.message.reply_text(trial_msg, parse_mode='Markdown')
+    # Try to use trial
+    if not use_trial(uid):
+        # Failed to use trial - show upgrade message  
+        await show_trial_expired_message(update)
+        return
+    
+    # Trial used successfully - show counter and generate prediction
+    remaining_after = get_remaining_generations(uid)
+    remaining_text = format_remaining_generations(uid).replace('**', '')
+    
+    if remaining_after > 0:
+        trial_msg = f"🎁 **Generare consumată cu succes!**\n\n🎯 **{remaining_text}**\n\n💡 Upgrade pentru predicții nelimitate!"
+    else:
+        trial_msg = f"🎁 **Ultima generare gratuită folosită!**\n\n❌ **0/2 generări rămase**\n\n💎 **Upgrade ACUM pentru acces nelimitat!**\n\n👤 Apasă 'Contul Meu' → 'Contact Admin'"
+    
+    await update.message.reply_text(trial_msg, parse_mode='Markdown')
     
     lang = get_lang(uid)
     await update.message.reply_text(tr(lang,"processing"))
@@ -935,32 +945,46 @@ async def picks_for_date(update: Update, context: ContextTypes.DEFAULT_TYPE, dat
 async def cmd_markets(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show Over/Under 2.5 and BTTS markets"""
     uid = update.effective_user.id
-    can_access, msg = plan_gate(uid, 'markets')
+    user_stats = get_user_stats(uid)
     
-    if not can_access:
-        if 'trial expirat' in msg.lower():
-            await show_trial_expired_message(update)
+    # Check if user has active subscription
+    if user_stats['plan'] != 'free':
+        # Paid user - unlimited access
+        lang = get_lang(uid)
+        await update.message.reply_text(tr(lang,"processing"))
+        
+        # Parse optional date argument or default to today
+        args = context.args
+        if args and len(args) > 0:
+            date_str = args[0]
         else:
-            await update.message.reply_text(f"{msg}\n\nFolosește /subscribe pentru upgrade!")
+            date_str = today_iso()
+        await markets_for_date(update, context, date_str, lang)
         return
     
-    # Use trial if free user
-    user_stats = get_user_stats(uid)
-    if user_stats['plan'] == 'free':
-        if not use_trial(uid):
-            await show_trial_expired_message(update)
-            return
-        
-        # Show remaining generations counter (after using one)
-        remaining = get_remaining_generations(uid)
-        remaining_text = format_remaining_generations(uid)
-        
-        if remaining > 0:
-            trial_msg = f"🎁 **Generare markets consumată!**\n\n{remaining_text}\n\n💡 Upgrade pentru predicții nelimitate!"
-        else:
-            trial_msg = f"🎁 **Ultima generare gratuită folosită!**\n\n❌ **0/2** generări rămase\n\n💎 **Upgrade ACUM pentru acces nelimitat!**\n\n👤 Apasă 'Contul Meu' → 'Contact Admin'"
-        
-        await update.message.reply_text(trial_msg, parse_mode='Markdown')
+    # Free user - check trial usage BEFORE generating
+    remaining_before = get_remaining_generations(uid)
+    if remaining_before <= 0:
+        # No trials left - show upgrade message
+        await show_trial_expired_message(update)
+        return
+    
+    # Try to use trial
+    if not use_trial(uid):
+        # Failed to use trial - show upgrade message  
+        await show_trial_expired_message(update)
+        return
+    
+    # Trial used successfully - show counter and generate prediction
+    remaining_after = get_remaining_generations(uid)
+    remaining_text = format_remaining_generations(uid).replace('**', '')
+    
+    if remaining_after > 0:
+        trial_msg = f"🎁 **Generare markets consumată!**\n\n🎯 **{remaining_text}**\n\n💡 Upgrade pentru predicții nelimitate!"
+    else:
+        trial_msg = f"🎁 **Ultima generare gratuită folosită!**\n\n❌ **0/2 generări rămase**\n\n💎 **Upgrade ACUM pentru acces nelimitat!**\n\n👤 Apasă 'Contul Meu' → 'Contact Admin'"
+    
+    await update.message.reply_text(trial_msg, parse_mode='Markdown')
         
     lang = get_lang(uid)
     await update.message.reply_text(tr(lang,"processing"))
@@ -1176,26 +1200,12 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.edit_message_text(tr(lang, "welcome_title", emoji="🤖⚽✨"), reply_markup=_kb_main(lang))
         return
     if data == "MENU_TODAY":
-        # Show loading animation
-        loading_msg = await send_loading_animation(update, "prediction")
-        await q.edit_message_text("🔮🔥 **Generez TOP PICKS...** ⚡\n🎯 **Loading cele mai bune selecții...**", parse_mode='Markdown')
-        
-        # Process the request
-        await picks_for_date(update, context, today_iso(), lang)
-        
-        # Delete loading animation after processing
-        await delete_animation_message(loading_msg)
+        # Use the same logic as cmd_today for trial checking
+        await cmd_today(update, context)
         return
     if data == "MENU_MARKETS":
-        # Show loading animation
-        loading_msg = await send_loading_animation(update, "prediction")
-        await q.edit_message_text("📊💎 **Analizez piețele...** 🔥\n⚡ **Calculez O/U și BTTS probabilitățile...**", parse_mode='Markdown')
-        
-        # Process the request
-        await markets_for_date(update, context, today_iso(), lang)
-        
-        # Delete loading animation after processing
-        await delete_animation_message(loading_msg)
+        # Use the same logic as cmd_markets for trial checking
+        await cmd_markets(update, context)
         return
     if data == "MENU_ALL_MARKETS":
         # Show loading animation
