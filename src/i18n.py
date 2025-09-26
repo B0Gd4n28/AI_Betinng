@@ -75,7 +75,13 @@ T = {
     "build": "Construiește",
     "odds_unavailable": "ℹ️ Cotele indisponibile pe planul gratuit; am folosit doar forma echipelor.",
     "info_fallback": "ℹ️ Unele cote pot fi indisponibile — am folosit analiza formei echipelor.",
-    "disclaimer": "⚠️ Pariurile implică risc. +18. Nu există garanții. Joacă responsabil."
+    "disclaimer": "⚠️ Pariurile implică risc. +18. Nu există garanții. Joacă responsabil.",
+    "language_selected": "Limba a fost selectată cu succes!",
+    "trial_welcome": "Ai 2 generări gratuite pentru a testa PariuSmart AI!",
+    "trial_used": "Ai folosit o generare gratuită",
+    "trial_expired_title": "🔒 Generări gratuite epuizate",
+    "trial_expired_body": "Ai folosit cele 2 generări gratuite!\n\n🎯 Pentru acces nelimitat la toate predicțiile AI:",
+    "upgrade_now": "⬆️ Upgrade acum"
   },
   "EN": {
     "app_name": "PariuSmart AI",
@@ -146,7 +152,13 @@ T = {
     "build": "Build",
     "odds_unavailable": "ℹ️ Odds unavailable on free plan; used team form only.",
     "info_fallback": "ℹ️ Some odds may be unavailable — used team form analysis.",
-    "disclaimer": "⚠️ Betting involves risk. 18+. No guarantees. Play responsibly."
+    "disclaimer": "⚠️ Betting involves risk. 18+. No guarantees. Play responsibly.",
+    "language_selected": "Language selected successfully!",
+    "trial_welcome": "You have 2 free generations to test PariuSmart AI!",
+    "trial_used": "You used a free generation",
+    "trial_expired_title": "🔒 Free generations exhausted",
+    "trial_expired_body": "You've used your 2 free generations!\n\n🎯 For unlimited access to all AI predictions:",
+    "upgrade_now": "⬆️ Upgrade now"
   },
   "RU": {
     "app_name": "PariuSmart AI",
@@ -217,7 +229,13 @@ T = {
     "build": "Собрать",
     "odds_unavailable": "ℹ️ Коэффициенты недоступны на бесплатном тарифе; использована только форма команд.",
     "info_fallback": "ℹ️ Некоторые коэффициенты могут быть недоступны — использован анализ формы команд.",
-    "disclaimer": "⚠️ Азартные игры несут риск. 18+. Гарантий нет. Играйте ответственно."
+    "disclaimer": "⚠️ Азартные игры несут риск. 18+. Гарантий нет. Играйте ответственно.",
+    "language_selected": "Язык успешно выбран!",
+    "trial_welcome": "У вас есть 2 бесплатные генерации для тестирования PariuSmart AI!",
+    "trial_used": "Вы использовали бесплатную генерацию",
+    "trial_expired_title": "🔒 Бесплатные генерации исчерпаны",
+    "trial_expired_body": "Вы использовали ваши 2 бесплатные генерации!\n\n🎯 Для неограниченного доступа ко всем ИИ-прогнозам:",
+    "upgrade_now": "⬆️ Обновить сейчас"
   }
 }
 

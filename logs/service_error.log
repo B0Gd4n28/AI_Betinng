@@ -1,0 +1,252 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 6, in <module>
+    import os, asyncio, datetime as dt, requests, random
+ModuleNotFoundError: No module named 'requests'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2941, in <module>
+    main()
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2935, in main
+    print("\U0001f916\u26bd\u2728 PariuSmart AI Bot started with ADVANCED FEATURES!")
+  File "C:\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-2: character maps to <undefined>
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2941, in <module>
+    main()
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2935, in main
+    print("\U0001f916\u26bd\u2728 PariuSmart AI Bot started with ADVANCED FEATURES!")
+  File "C:\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-2: character maps to <undefined>
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2941, in <module>
+    main()
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2935, in main
+    print("\U0001f916\u26bd\u2728 PariuSmart AI Bot started with ADVANCED FEATURES!")
+  File "C:\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-2: character maps to <undefined>
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2941, in <module>
+    main()
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2935, in main
+    print("\U0001f916\u26bd\u2728 PariuSmart AI Bot started with ADVANCED FEATURES!")
+  File "C:\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-2: character maps to <undefined>
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2941, in <module>
+    main()
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2935, in main
+    print("\U0001f916\u26bd\u2728 PariuSmart AI Bot started with ADVANCED FEATURES!")
+  File "C:\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-2: character maps to <undefined>
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2941, in <module>
+    main()
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2935, in main
+    print("\U0001f916\u26bd\u2728 PariuSmart AI Bot started with ADVANCED FEATURES!")
+  File "C:\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-2: character maps to <undefined>
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2941, in <module>
+    main()
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2935, in main
+    print("\U0001f916\u26bd\u2728 PariuSmart AI Bot started with ADVANCED FEATURES!")
+  File "C:\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-2: character maps to <undefined>
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 11, in <module>
+    from src.fetchers.football_data import get_matches_for_date, get_team_recent_results
+  File "C:\Users\Bogdan\Downloads\free-soccer-telegram-bot\src\fetchers\football_data.py", line 8, in <module>
+    from utils.cache import cache
+ModuleNotFoundError: No module named 'utils.cache'
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2941, in <module>
+    main()
+  File "c:\Users\Bogdan\Downloads\free-soccer-telegram-bot\bot\bot.py", line 2935, in main
+    print("\U0001f916\u26bd\u2728 PariuSmart AI Bot started with ADVANCED FEATURES!")
+  File "C:\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-2: character maps to <undefined>

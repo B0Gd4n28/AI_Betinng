@@ -331,10 +331,12 @@ async def delete_animation_message(message):
 
 async def show_trial_expired_message(update):
     """Show educational message when trial is expired"""
-    educational_msg = """
-❌ **TRIAL EXPIRAT - Treci la Abonament!**
+    uid = update.effective_user.id
+    lang = get_lang(uid)
+    
+    educational_msg = f"""❌ **{tr(lang, 'trial_expired_title')}**
 
-🎯 **Ai consumat cele 2 generări gratuite!**
+🎯 **{tr(lang, 'trial_expired_body')}**
 
 � **Ce pierzi fără abonament?**
 • Predicții AI bazate pe machine learning
@@ -692,11 +694,33 @@ def get_comprehensive_match_predictions(match, odds_events, token, date_iso):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
-    lang = get_lang(uid)
-    user_name = update.effective_user.first_name or "Prietene"
+    user_name = update.effective_user.first_name or "Friend"
     
-    # Get user stats for personalized welcome
+    # Check if user has language set
+    current_lang = get_lang(uid)
     user_stats = get_user_stats(uid)
+    
+    # For new users, show language selection first
+    if user_stats['is_new_user'] and current_lang == 'ro':  # Default language
+        # Show language selection
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🇷🇴 Română", callback_data="SET_LANG_ro")],
+            [InlineKeyboardButton("🇬🇧 English", callback_data="SET_LANG_en")],
+            [InlineKeyboardButton("🇷🇺 Русский", callback_data="SET_LANG_ru")]
+        ])
+        
+        welcome_text = f"""👋 **Welcome to PariuSmart AI, {user_name}!**
+🌍 **Please select your language:**
+
+🇷🇴 **Română** - Limba română
+🇬🇧 **English** - English language  
+🇷🇺 **Русский** - Русский язык"""
+        
+        await update.message.reply_text(welcome_text, reply_markup=keyboard, parse_mode='Markdown')
+        return
+    
+    # For existing users or after language selection, show normal welcome
+    lang = current_lang
     
     # Try to send welcome animation first
     await send_welcome_animation(update, lang)
@@ -789,6 +813,7 @@ async def health(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     gdelt="ENABLED" if settings.gdelt_enabled else "DISABLED")
     
     await update.message.reply_text(f"{tr(lang, 'health_title')}\n\n{health_text}")
+
 
 async def cmd_today(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -1008,9 +1033,34 @@ async def cmd_markets(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_all_markets(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Show comprehensive predictions for all markets"""
-    lang = get_lang(update.effective_user.id)
-    await update.message.reply_text("🔮 Generez predicții complete pentru toate piețele...")
+    uid = update.effective_user.id
+    user_stats = get_user_stats(uid)
+    lang = get_lang(uid)
     
+    # Check if user has active subscription
+    if user_stats['plan'] != 'free':
+        # Paid user - unlimited access
+        await update.message.reply_text("🔮 Generez predicții complete pentru toate piețele...")
+        date_iso = today_iso()
+        await all_markets_for_date(update, context, date_iso, lang)
+        return
+    
+    # Free user - check trial usage BEFORE generating
+    remaining_before = get_remaining_generations(uid)
+    if remaining_before <= 0:
+        # No trials left - show upgrade message
+        await show_trial_expired_message(update)
+        return
+    
+    # Try to use trial
+    if not use_trial(uid):
+        # Failed to use trial - show upgrade message  
+        await show_trial_expired_message(update)
+        return
+    
+    # Trial used successfully - show counter and generate prediction
+    remaining_after = get_remaining_generations(uid)
+    await update.message.reply_text(f"🎯 {tr(lang, 'trial_used')} ({remaining_after} rămase)\n🔮 Generez predicții complete pentru toate piețele...")
     date_iso = today_iso()
     await all_markets_for_date(update, context, date_iso, lang)
 
@@ -1190,22 +1240,58 @@ def match_odds_for_fixture(odds_events: list, home_name: str, away_name: str):
 
 async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    await q.answer()
+    
+    # Handle old callback queries gracefully
+    try:
+        await q.answer()
+    except Exception as e:
+        if "too old" in str(e).lower() or "timeout" in str(e).lower():
+            # Silently ignore old callback queries
+            return
+        else:
+            print(f"Callback answer error: {e}")
+            return
+    
     user_id = update.effective_user.id
     lang = get_lang(user_id)
     data = q.data
+
+    # Language selection handling
+    if data.startswith("SET_LANG_"):
+        new_lang = data.split("_")[-1]  # Extract language code
+        set_lang(user_id, new_lang)
+        lang = new_lang  # Update current language
+        
+        user_name = update.effective_user.first_name or "Friend"
+        
+        # Show welcome message in selected language
+        user_stats = get_user_stats(user_id)
+        
+        # Show welcome message after language selection
+        welcome_msg = f"✅ **{tr(lang, 'language_selected')}**\n\n👋 **{tr(lang, 'welcome_title', name=user_name)}**\n\n🎁 **{tr(lang, 'trial_welcome')}**"
+        
+        await q.edit_message_text(welcome_msg, reply_markup=_kb_main(lang), parse_mode='Markdown')
+        return
 
     # menu navigation
     if data == "MENU_MAIN":
         await q.edit_message_text(tr(lang, "welcome_title", emoji="🤖⚽✨"), reply_markup=_kb_main(lang))
         return
     if data == "MENU_TODAY":
-        # Use the same logic as cmd_today for trial checking
-        await cmd_today(update, context)
+        # Convert callback to message-like update for compatibility
+        fake_update = Update(
+            update_id=update.update_id,
+            message=q.message
+        )
+        await cmd_today(fake_update, context)
         return
     if data == "MENU_MARKETS":
-        # Use the same logic as cmd_markets for trial checking
-        await cmd_markets(update, context)
+        # Convert callback to message-like update for compatibility  
+        fake_update = Update(
+            update_id=update.update_id,
+            message=q.message
+        )
+        await cmd_markets(fake_update, context)
         return
     if data == "MENU_ALL_MARKETS":
         # Show loading animation
@@ -1790,7 +1876,48 @@ Conținut educațional, fără garanții de câștig. Pariați responsabil!
 
 async def cmd_express(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Enhanced express/parlay command with improved detail display"""
-    lang = get_lang(update.effective_user.id)
+    uid = update.effective_user.id
+    user_stats = get_user_stats(uid)
+    lang = get_lang(uid)
+    
+    # Check if user has active subscription
+    if user_stats['plan'] != 'free':
+        # Paid user - unlimited access
+        # Check for command arguments
+        args = context.args
+        if len(args) >= 3:
+            try:
+                min_odds = float(args[0])
+                max_odds = float(args[1])
+                legs = int(args[2])
+                context.user_data["exp_cfg"] = {"legs": legs, "min": min_odds, "max": max_odds}
+                await update.message.reply_text(tr(lang,"processing"))
+                await build_express(update, context, lang)
+                return
+            except (ValueError, IndexError):
+                pass
+        
+        # Show wizard for paid users
+        context.user_data["exp_cfg"] = {"legs":3, "min":2.0, "max":4.0}
+        await update.message.reply_text(tr(lang,"wizard_title"), reply_markup=_kb_express(lang))
+        return
+    
+    # Free user - check trial usage BEFORE generating
+    remaining_before = get_remaining_generations(uid)
+    if remaining_before <= 0:
+        # No trials left - show upgrade message
+        await show_trial_expired_message(update)
+        return
+    
+    # Try to use trial
+    if not use_trial(uid):
+        # Failed to use trial - show upgrade message  
+        await show_trial_expired_message(update)
+        return
+    
+    # Trial used successfully - show counter and generate prediction
+    remaining_after = get_remaining_generations(uid)
+    await update.message.reply_text(f"🎯 {tr(lang, 'trial_used')} ({remaining_after} rămase)")
     
     # Check for command arguments
     args = context.args
@@ -1806,7 +1933,7 @@ async def cmd_express(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except (ValueError, IndexError):
             pass
     
-    # Show wizard
+    # Show wizard for trial users
     context.user_data["exp_cfg"] = {"legs":3, "min":2.0, "max":4.0}
     await update.message.reply_text(tr(lang,"wizard_title"), reply_markup=_kb_express(lang))
 
@@ -2460,6 +2587,74 @@ async def cmd_ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await _reply(update, ai_text, reply_markup=reply_markup)
 
 
+async def admin_cmd(update, context):
+    """Admin dashboard command"""
+    uid = update.effective_user.id
+    if not is_admin(uid):
+        await update.message.reply_text("⛔ Doar admin (ID: 1622719347).")
+        return
+    
+    await send_animated_sticker(update, "success")
+    
+    # Get comprehensive stats
+    from src.utils.subs import get_user_statistics, list_active_codes, get_user_activity
+    
+    stats = get_user_statistics()
+    codes = list_active_codes()
+    codes_text = "\n".join([f"• `{code}`" for code in codes[:5]]) if codes else "Niciun cod activ"
+    
+    # Recent activity
+    recent_activity = get_user_activity(limit=5)
+    activity_text = "\n".join([
+        f"• {act.get('action', 'N/A')} - User {str(act.get('uid', 'N/A'))[:6]}... ({act.get('timestamp', 'N/A')[:16]})"
+        for act in recent_activity[-3:]
+    ]) if recent_activity else "Nicio activitate recentă"
+    
+    # Calculate conversion rate
+    conversion_rate = 0
+    if stats['trial_users'] > 0:
+        conversion_rate = round((stats['active_subscribers'] / (stats['trial_users'] + stats['active_subscribers'])) * 100, 1)
+    
+    admin_text = f"""🔑 *ADMIN DASHBOARD - BOGDAN* 🔑
+
+📊 *USER STATISTICS:*
+👥 Total Users: {stats['total_users']}
+💎 Active Subscribers: {stats['active_subscribers']} 
+🆓 Trial Users: {stats['trial_users']}
+⚠️ Expired Subscriptions: {stats['expired_users']}
+📈 Conversion Rate: {conversion_rate}%
+
+💰 *REVENUE TRACKING:*
+🔥 Revenue Potential: ${stats['active_subscribers'] * 12.99:.2f}/month
+🎯 Target: $1,000/month
+
+🎟️ *PROMO CODES:* {len(codes)} active
+{codes_text[:200] if codes_text else 'Niciun cod activ'}
+
+🔄 *RECENT ACTIVITY:*
+{activity_text[:300] if activity_text else 'Nicio activitate'}
+
+⚙️ *ADMIN COMMANDS:*
+• /grant <user_id> <plan> - Grant BASIC/PRO/PREMIUM  
+• /users - List all users with status
+• /admin - Refresh this dashboard
+• /reset_trial <user_id> - Reset user trial
+
+🎯 Admin ID: {uid} | Status: ACTIVE"""
+    
+    keyboard = [
+        [InlineKeyboardButton("👥 Lista Utilizatori", callback_data="ADMIN_USERS")],
+        [InlineKeyboardButton("📊 Statistici Avansate", callback_data="ADMIN_STATS")],
+        [InlineKeyboardButton("🔄 Refresh Dashboard", callback_data="ADMIN_REFRESH")]
+    ]
+    
+    await update.message.reply_text(
+        admin_text, 
+        parse_mode='Markdown',
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+
 def main():
     token = settings.telegram_token or os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
@@ -2580,102 +2775,6 @@ După plată, folosește /redeem CODUL_TĂU pentru activare.
 💡 **Tip:** Folosește /subscribe pentru upgrade!
         """
         await update.message.reply_text(status_text, parse_mode='Markdown')
-
-    async def grant_cmd(update, context):
-        uid = update.effective_user.id
-        if not is_admin(uid):
-            await update.message.reply_text("⛔ Doar admin.")
-            return
-        args = context.args
-        if len(args) != 3:
-            await update.message.reply_text("Format: /grant <zile> <plan:starter|pro> <id_user>")
-            return
-        try:
-            zile = int(args[0])
-            plan = args[1]
-            id_user = int(args[2])
-            if plan not in ("starter", "pro"):
-                raise ValueError
-        except Exception:
-            await update.message.reply_text("Format: /grant <zile> <plan:starter|pro> <id_user>")
-            return
-        exp = grant_days(id_user, plan, zile)
-        await update.message.reply_text(f"✅ Grant {zile} zile ({plan}) → {id_user}. Expiră: {exp}")
-
-    async def admin_cmd(update, context):
-        uid = update.effective_user.id
-        if not is_admin(uid):
-            await update.message.reply_text("⛔ Doar admin (ID: 1622719347).")
-            return
-        
-        await send_animated_sticker(update, "success")
-        
-        # Get comprehensive stats
-        from src.utils.subs import get_user_statistics, list_active_codes, get_user_activity
-        
-        stats = get_user_statistics()
-        codes = list_active_codes()
-        codes_text = "\n".join([f"• `{code}`" for code in codes[:5]]) if codes else "Niciun cod activ"
-        
-        # Recent activity
-        recent_activity = get_user_activity(limit=5)
-        activity_text = "\n".join([
-            f"• {act.get('action', 'N/A')} - User {str(act.get('uid', 'N/A'))[:6]}... ({act.get('timestamp', 'N/A')[:16]})"
-            for act in recent_activity[-3:]
-        ]) if recent_activity else "Nicio activitate recentă"
-        
-        # Calculate conversion rate
-        conversion_rate = 0
-        if stats['trial_users'] > 0:
-            conversion_rate = round((stats['active_subscribers'] / (stats['trial_users'] + stats['active_subscribers'])) * 100, 1)
-        
-        admin_text = f"""
-🔑 **ADMIN DASHBOARD - BOGDAN** 🔑
-════════════════════════════════
-
-📊 **USER STATISTICS:**
-├─ 👥 **Total Users:** {stats['total_users']}
-├─ 💎 **Active Subscribers:** {stats['active_subscribers']} 
-├─ 🆓 **Trial Users:** {stats['trial_users']}
-├─ ⚠️ **Expired Subscriptions:** {stats['expired_users']}
-└─ 📈 **Conversion Rate:** {conversion_rate}%
-
-💰 **REVENUE TRACKING:**
-├─ 🔥 **BASIC subscribers:** ${stats['active_subscribers'] * 12.99:.2f}/month potential
-├─ 💎 **PRO subscribers:** ${stats['active_subscribers'] * 19.99:.2f}/month potential  
-└─ 🎯 **Target:** $1,000/month
-
-🎟️ **PROMO CODES ({len(codes)}):**
-{codes_text}
-{f"...and {len(codes)-5} more codes" if len(codes) > 5 else ""}
-
-🔄 **RECENT ACTIVITY:**
-{activity_text}
-
-⚙️ **ADMIN COMMANDS:**
-• `/grant <user_id> <plan>` - Grant BASIC/PRO/PREMIUM  
-• `/users` - List all users with status
-• `/admin` - Refresh this dashboard
-• `/reset_trial <user_id>` - Reset user trial
-
-💡 **QUICK GRANT EXAMPLES:**
-• `/grant 123456789 PRO` - Grant PRO (30 days)
-• `/grant 123456789 PREMIUM` - Grant PREMIUM (30 days)
-
-🎯 **Admin ID:** `{uid}` | **Status:** ACTIVE
-        """
-        
-        keyboard = [
-            [InlineKeyboardButton("� Lista Utilizatori", callback_data="ADMIN_USERS")],
-            [InlineKeyboardButton("📊 Statistici Avansate", callback_data="ADMIN_STATS")],
-            [InlineKeyboardButton("� Refresh Dashboard", callback_data="ADMIN_REFRESH")]
-        ]
-        
-        await update.message.reply_text(
-            admin_text, 
-            parse_mode='Markdown',
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
 
     async def grant_cmd(update, context):
         """Grant subscription plan to user"""
@@ -2827,7 +2926,6 @@ După plată, folosește /redeem CODUL_TĂU pentru activare.
     app.add_handler(CommandHandler("status", status_cmd))
     app.add_handler(CommandHandler("grant", grant_cmd))
     app.add_handler(CommandHandler("admin", admin_cmd))
-    app.add_handler(CommandHandler("grant", grant_cmd))
     app.add_handler(CommandHandler("users", users_cmd))
     app.add_handler(CommandHandler("reset_trial", reset_trial_cmd))
     # --- END SUBSCRIPTIONS MVP ---
