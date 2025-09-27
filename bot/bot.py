@@ -1263,14 +1263,42 @@ async def on_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lang = new_lang  # Update current language
         
         user_name = update.effective_user.first_name or "Friend"
-        
-        # Show welcome message in selected language
         user_stats = get_user_stats(user_id)
         
-        # Show welcome message after language selection
-        welcome_msg = f"✅ **{tr(lang, 'language_selected')}**\n\n👋 **{tr(lang, 'welcome_title', name=user_name)}**\n\n🎁 **{tr(lang, 'trial_welcome')}**"
+        # For new users, show personalized welcome message with menu
+        if user_stats['is_new_user']:
+            welcome_msg = [
+                f"✅ **Limba selectată: {new_lang.upper()}**",
+                "",
+                f"👋 **Bun venit în PariuSmart AI, {user_name}!**",
+                "",
+                "🎁 **Cadou de bun venit: 2 generări gratuite!**",
+                "",
+                "🤖 **Ce poți face:**",
+                "🎯 `/today` - Generează predicții pentru astăzi",
+                "📊 `/markets` - Analizează piețe de pariuri", 
+                "💎 `/express` - Construiește bilet combinat",
+                "👤 `/status` - Vezi contul tău",
+                "",
+                f"✨ **Status:** {format_remaining_generations(user_id)}",
+                "",
+                "🚀 **Alege o opțiune din meniul de mai jos:**"
+            ]
+        else:
+            # For existing users, just show language confirmation
+            welcome_msg = [
+                f"✅ **Limba actualizată: {new_lang.upper()}**",
+                "",
+                f"👋 **Salut din nou, {user_name}!**",
+                "",
+                f"✨ **Status:** {format_remaining_generations(user_id)}"
+            ]
         
-        await q.edit_message_text(welcome_msg, reply_markup=_kb_main(lang), parse_mode='Markdown')
+        await q.edit_message_text(
+            "\n".join(welcome_msg), 
+            reply_markup=_kb_main(lang), 
+            parse_mode='Markdown'
+        )
         return
 
     # menu navigation

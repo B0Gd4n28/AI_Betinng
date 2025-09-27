@@ -34,17 +34,66 @@ def get_plan(uid: int) -> tuple[str, str|None]:
         return 'free', None
     return user.get('plan', 'free'), user.get('expires')
 
+def get_plan_limits(plan: str) -> dict:
+    """Get generation limits and features for each plan"""
+    limits = {
+        'free': {
+            'daily_predictions': 2,
+            'express_selections': 0,
+            'features': ['basic_predictions']
+        },
+        'basic': {
+            'daily_predictions': 50,
+            'express_selections': 3,
+            'features': ['basic_predictions', 'stats', 'live_analysis']
+        },
+        'starter': {
+            'daily_predictions': 50,
+            'express_selections': 3,
+            'features': ['basic_predictions', 'stats', 'live_analysis', 'bankroll']
+        },
+        'pro': {
+            'daily_predictions': -1,  # unlimited
+            'express_selections': 4,
+            'features': ['all']
+        },
+        'premium': {
+            'daily_predictions': -1,  # unlimited  
+            'express_selections': 5,
+            'features': ['all', 'premium']
+        }
+    }
+    return limits.get(plan, limits['free'])
+
 def grant_days(uid: int, plan: str, days: int) -> str:
     data = _load()
     uid = str(uid)
     expires = None
+    
+    # Calculate expiration date
     if uid in data['users'] and data['users'][uid].get('expires'):
         old_exp = datetime.strptime(data['users'][uid]['expires'], '%Y-%m-%d')
         new_exp = max(datetime.now(), old_exp) + timedelta(days=days)
     else:
         new_exp = datetime.now() + timedelta(days=days)
     expires = new_exp.strftime('%Y-%m-%d')
-    data['users'][uid] = {'plan': plan, 'expires': expires}
+    
+    # Preserve existing user data or create new
+    if uid not in data['users']:
+        data['users'][uid] = {
+            'plan': plan,
+            'expires': expires,
+            'trial_used': 0,
+            'daily_usage': {},
+            'joined': datetime.now().isoformat()
+        }
+    else:
+        # Update plan but preserve usage counters
+        data['users'][uid]['plan'] = plan
+        data['users'][uid]['expires'] = expires
+        # Reset daily usage when upgrading
+        data['users'][uid]['daily_usage'] = {}
+    
     _save(data)
     return expires
 
@@ -134,25 +183,71 @@ def get_trial_usage(uid: int) -> tuple[int, int]:
     """Get trial usage for user (used, remaining)"""
     data = _load()
     user = data['users'].get(str(uid), {})
-    trial_used = user.get('trial_used', 0)
-    trial_remaining = max(0, 2 - trial_used)  # 2 generări gratuite
-    return trial_used, trial_remaining
+    plan = user.get('plan', 'free')
+    
+    # Get plan limits
+    limits = get_plan_limits(plan)
+    max_daily = limits['daily_predictions']
+    
+    # For free users, use trial_used counter
+    if plan == 'free':
+        trial_used = user.get('trial_used', 0)
+        trial_remaining = max(0, max_daily - trial_used)
+        return trial_used, trial_remaining
+    
+    # For paid users with unlimited (-1)
+    if max_daily == -1:
+        return 0, float('inf')
+    
+    # For paid users with daily limits
+    today = datetime.now().strftime('%Y-%m-%d')
+    daily_usage = user.get('daily_usage', {})
+    used_today = daily_usage.get(today, 0)
+    remaining_today = max(0, max_daily - used_today)
+    
+    return used_today, remaining_today
 
 def use_trial(uid: int) -> bool:
-    """Use one trial generation. Returns True if successful, False if no trials left"""
+    """Use one generation based on user plan. Returns True if successful, False if no generations left"""
     data = _load()
     uid_str = str(uid)
     
     if uid_str not in data['users']:
-        data['users'][uid_str] = {'plan': 'free', 'trial_used': 0}
+        data['users'][uid_str] = {
+            'plan': 'free', 
+            'trial_used': 0,
+            'daily_usage': {},
+            'joined': datetime.now().isoformat()
+        }
     
     user = data['users'][uid_str]
-    trial_used = user.get('trial_used', 0)
+    plan = user.get('plan', 'free')
+    limits = get_plan_limits(plan)
+    max_daily = limits['daily_predictions']
     
-    if trial_used >= 2:
-        return False  # No trials left
+    # For free users - use trial_used counter
+    if plan == 'free':
+        trial_used = user.get('trial_used', 0)
+        if trial_used >= max_daily:
+            return False  # No trials left
+        user['trial_used'] = trial_used + 1
+        _save(data)
+        return True
     
-    user['trial_used'] = trial_used + 1
+    # For unlimited plans
+    if max_daily == -1:
+        return True
+    
+    # For paid users with daily limits
+    today = datetime.now().strftime('%Y-%m-%d')
+    if 'daily_usage' not in user:
+        user['daily_usage'] = {}
+    
+    used_today = user['daily_usage'].get(today, 0)
+    if used_today >= max_daily:
+        return False  # Daily limit reached
+    
+    user['daily_usage'][today] = used_today + 1
     _save(data)
     return True
 
@@ -289,32 +384,34 @@ def get_pricing_catalog() -> dict:
     """Get pricing catalog for subscription plans with attractive USD pricing"""
     return {
         'BASIC': {
+            'plan_key': 'basic',
             'price_monthly': '$7.99/month',
             'price_yearly': '$79.99/year (SAVE 17%)',
             'price_original': '$95.88',
             'features': [
                 '✅ 50 AI predictions daily',
+                '✅ Express builder (3 selections)',
                 '✅ LIVE match analysis',
                 '✅ Detailed statistics & insights',
                 '✅ 24/7 premium support',
-                '✅ Mobile app access',
                 '✅ Win rate tracking'
             ],
             'savings': 'SAVE $15.89/year',
             'discount': '17% OFF'
         },
         'PRO': {
+            'plan_key': 'pro',
             'price_monthly': '$12.99/month', 
             'price_yearly': '$119.99/year (SAVE 23%)',
             'price_original': '$155.88',
             'features': [
                 '🔥 UNLIMITED AI PREDICTIONS',
+                '🔥 Express builder (4 selections)',
                 '🔥 Advanced ML algorithms',
-                '🔥 Auto express builder',
                 '🔥 Personal betting strategies',
-                '🔥 Instant PUSH alerts',
+                '🔥 Bankroll management',
                 '🔥 VIP priority support',
-                '🔥 Exclusive Telegram channel',
+                '🔥 Exclusive features',
                 '🔥 Weekly expert insights'
             ],
             'savings': 'SAVE $35.89/year',
@@ -322,18 +419,19 @@ def get_pricing_catalog() -> dict:
             'discount': '23% OFF'
         },
         'PREMIUM': {
+            'plan_key': 'premium',
             'price_monthly': '$19.99/month',
             'price_yearly': '$179.99/year (SAVE 25%)', 
             'price_original': '$239.88',
             'features': [
-                '� ALL PRO features included',
-                '� Psychology-based analysis',
-                '� Weather impact predictions',
-                '� Advanced portfolio tracking',
-                '� 1-on-1 expert consultations',
-                '� Developer API access',
-                '💎 Custom betting bot creation',
-                '💎 ROI optimization tools'
+                '💎 ALL PRO features included',
+                '💎 Express builder (5 selections)',
+                '💎 Psychology-based analysis',
+                '💎 Weather impact predictions',
+                '💎 Advanced portfolio tracking',
+                '💎 1-on-1 expert consultations',
+                '💎 Developer API access',
+                '💎 Custom tools & insights'
             ],
             'savings': 'SAVE $59.89/year',
             'exclusive': True,
@@ -342,7 +440,7 @@ def get_pricing_catalog() -> dict:
     }
 
 def get_remaining_generations(uid: int) -> int:
-    """Get remaining free generations for user"""
+    """Get remaining generations for user based on their plan"""
     data = _load()
     uid_str = str(uid)
     
@@ -352,30 +450,55 @@ def get_remaining_generations(uid: int) -> int:
     
     user = data['users'][uid_str]
     plan = user.get('plan', 'free')
+    limits = get_plan_limits(plan)
+    max_daily = limits['daily_predictions']
     
-    # Paid users have unlimited generations
+    # Check if subscription is active for paid users
     if plan != 'free':
         expires = user.get('expires')
         if expires:
             try:
                 exp_date = datetime.strptime(expires, '%Y-%m-%d')
-                if datetime.now().date() <= exp_date.date():
+                if datetime.now().date() > exp_date.date():
+                    # Subscription expired - downgrade to free
+                    plan = 'free'
+                    max_daily = 2
+                elif max_daily == -1:
                     return float('inf')  # Unlimited for active subscribers
             except:
-                pass
+                plan = 'free'
+                max_daily = 2
     
-    # Free users: 2 - used (ensure we get current usage)
-    trial_used = user.get('trial_used', 0)
-    remaining = max(0, 2 - trial_used)
-    return remaining
+    # For free users: max_daily - trial_used
+    if plan == 'free':
+        trial_used = user.get('trial_used', 0)
+        remaining = max(0, max_daily - trial_used)
+        return remaining
+    
+    # For paid users with daily limits
+    today = datetime.now().strftime('%Y-%m-%d')
+    daily_usage = user.get('daily_usage', {})
+    used_today = daily_usage.get(today, 0)
+    remaining_today = max(0, max_daily - used_today)
+    
+    return remaining_today
 
 def format_remaining_generations(uid: int) -> str:
     """Format remaining generations for display"""
+    data = _load()
+    uid_str = str(uid)
+    user = data['users'].get(uid_str, {})
+    plan = user.get('plan', 'free')
+    limits = get_plan_limits(plan)
+    max_daily = limits['daily_predictions']
+    
     remaining = get_remaining_generations(uid)
     
     if remaining == float('inf'):
-        return "♾️ **NELIMITAT**"
-    elif remaining > 0:
-        return f"🎯 **{remaining}/2** generări gratuite"
+        return "♾️ **NELIMITAT** (Plan Premium)"
+    elif plan == 'free':
+        return f"� **{remaining}/{max_daily}** generări gratuite"
+    elif max_daily > 0:
+        return f"💎 **{remaining}/{max_daily}** generări astăzi (Plan {plan.title()})"
     else:
-        return "❌ **0/2** - Upgrade pentru mai multe!"
+        return "❌ **Limita zilnică atinsă** - Încearcă mâine!"
