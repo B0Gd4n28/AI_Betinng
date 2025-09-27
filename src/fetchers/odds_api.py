@@ -7,7 +7,7 @@ import os
 
 # Add src to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from utils.cache import cache
+from utils.cache import cache, get_cache
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def get_odds_for_sport(api_key: str, sport_key: str, regions: str = "uk,eu", mar
     cache_key = f"odds_{sport_key}_{regions}_{markets}"
     
     # Check cache first
-    cached_result = cache.get(cache_key)
+    cached_result = get_cache(cache_key)
     if cached_result is not None:
         logger.debug(f"Using cached odds for {sport_key}")
         return cached_result
@@ -47,7 +47,7 @@ def get_odds_for_sport(api_key: str, sport_key: str, regions: str = "uk,eu", mar
         result = (r.json(), dict(r.headers))
         
         # Cache for 90 seconds (odds change frequently)
-        cache.set(cache_key, result, ttl=90)
+        cache(cache_key, result, 90)
         
         return result
         

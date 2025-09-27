@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 
 # Add src to path for imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from utils.cache import cache
+from utils.cache import cache, get_cache
 
 logger = logging.getLogger(__name__)
 BASE = "https://api.football-data.org/v4"
@@ -20,7 +20,7 @@ def get_matches_for_date(token: str | None, comp_codes: List[str], date_iso: str
     cache_key = f"football_data_matches_{','.join(comp_codes)}_{date_iso}"
     
     # Check cache first
-    cached_result = cache.get(cache_key)
+    cached_result = get_cache(cache_key)
     if cached_result is not None:
         logger.debug(f"Using cached Football-Data matches for {date_iso}")
         return cached_result
@@ -65,7 +65,7 @@ def get_matches_for_date(token: str | None, comp_codes: List[str], date_iso: str
         return []
     
     # Cache for 5 minutes (football data changes frequently during match days)
-    cache.set(cache_key, res, ttl=300)
+    cache(cache_key, res, 300)
     
     return res
 
